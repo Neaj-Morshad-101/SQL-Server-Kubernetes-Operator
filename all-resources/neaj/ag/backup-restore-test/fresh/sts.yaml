@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: repl
+  labels:
+    app: repl
+spec:
+  ports:
+  - port: 1433
+    name: repl
+  - port: 5022
+    name: mirror
+  clusterIP: None
+  selector:
+    app: repl
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: repl
+spec:
+  serviceName: repl
+  replicas: 2
+  selector:
+    matchLabels:
+      app: repl
+  template:
+    metadata:
+      labels:
+        app: repl
+    spec:
+      containers:
+      - name: repl
+        image: sql22:ha  # sqlag:ha #tasdidur/mssql-rag:pot #mssql-optimized:vtest #msread:v1 #sqlag2020:v1 #mcr.microsoft.com/mssql/server:2019-latest #jrei/systemd-ubuntu:20.04 #ubuntu:20.04 #
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: ACCEPT_EULA
+            value: "Y"
+          - name: MSSQL_SA_PASSWORD
+            value: "Pa55w0rd!"
+          - name: MSSQL_PID
+            value: "Developer"
+          - name: MSSQL_AGENT_ENABLED
+            value: "True"
+        ports:
+        - containerPort: 1433
+          name: repl
+        - containerPort: 5022
+          name: mirror

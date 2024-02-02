@@ -1,0 +1,16 @@
+apt-get update
+apt-get install curl 
+apt-get install gnupg
+curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+apt-get install wget
+apt install software-properties-common
+sudo add-apt-repository "$(wget -qO- https://packages.microsoft.com/config/ubuntu/20.04/mssql-server-2022.list)"
+sudo apt-get update
+sudo apt-get install -y mssql-server
+sudo /opt/mssql/bin/mssql-conf setup
+systemctl status mssql-server
+curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+curl https://packages.microsoft.com/config/ubuntu/20.04/prod.list | sudo tee /etc/apt/sources.list.d/msprod.list
+sudo apt-get update
+sudo apt-get install mssql-tools unixodbc-dev
+sqlcmd -S localhost -U SA -P ''

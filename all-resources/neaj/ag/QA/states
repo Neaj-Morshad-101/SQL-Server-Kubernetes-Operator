@@ -1,0 +1,42 @@
+[
+  {
+    "replica_id": "a1e3c61c-647f-49f1-b239-fdad31245d63",
+    "group_id": "be9be8c9-6e17-1132-bfba-8b7d2c28afdb",
+    "is_local": "1",
+    "role": 1,
+    "role_desc": "PRIMARY",
+    "operational_state": 2,
+    "operational_state_desc": "ONLINE",
+    "connected_state": 1,
+    "connected_state_desc": "CONNECTED",
+    "recovery_health": 1,
+    "recovery_health_desc": "ONLINE",
+    "synchronization_health": 2,
+    "synchronization_health_desc": "HEALTHY",
+    "last_connect_error_number": null,
+    "last_connect_error_description": null,
+    "last_connect_error_timestamp": null,
+    "write_lease_remaining_ticks": 9223372036854775807,
+    "current_configuration_commit_start_time_utc": null
+  },
+  {
+    "replica_id": "8ba903d8-0d97-4325-8a46-1b26fa59713d",
+    "group_id": "be9be8c9-6e17-1132-bfba-8b7d2c28afdb",
+    "is_local": "0",
+    "role": 2,
+    "role_desc": "SECONDARY",
+    "operational_state": null,
+    "operational_state_desc": null,
+    "connected_state": 1,
+    "connected_state_desc": "CONNECTED",
+    "recovery_health": null,
+    "recovery_health_desc": null,
+    "synchronization_health": 2,
+    "synchronization_health_desc": "HEALTHY",
+    "last_connect_error_number": null,
+    "last_connect_error_description": null,
+    "last_connect_error_timestamp": null,
+    "write_lease_remaining_ticks": null,
+    "current_configuration_commit_start_time_utc": null
+  }
+]

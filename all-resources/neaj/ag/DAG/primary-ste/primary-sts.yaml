@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mssql-primary-lb
+  labels:
+    app: mssql-primary-lb
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 1433
+    name: tcpsql
+    targetPort: 1433
+  - port: 5022
+    name: mirror
+    targetPort: 5022
+  selector:
+    mssql-ag-primary: "true"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mssql-primary-hl
+  labels:
+    app: mssql-primary-hl
+spec:
+  ports:
+  - port: 1433
+    name: tcpsql
+  - port: 5022
+    name: mirror
+  clusterIP: None
+  selector:
+    app: mssql-primary
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mssql-primary
+spec:
+  serviceName: mssql-primary-hl
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mssql-primary
+  template:
+    metadata:
+      labels:
+        app: mssql-primary
+    spec:
+      containers:
+      - name: mssql
+        image: neajmorshad/sql22:0.1 #jrei/systemd-ubuntu:20.04 #ubuntu:20.04 #
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: ACCEPT_EULA
+            value: "Y"
+          - name: MSSQL_ENABLE_HADR
+            value: "1"
+          - name: MSSQL_AGENT_ENABLED
+            value: "1"  
+          - name: MSSQL_SA_PASSWORD
+            value: "Pa55w0rd!"
+          - name: MSSQL_PID
+            value: "Developer"
+        ports:
+        - containerPort: 1433
+          name: tcpsql
+        - containerPort: 5022
+          name: mirror
+        volumeMounts:
+        - name: mssql
+          mountPath: /var/opt/mssql
+  volumeClaimTemplates:
+  - metadata:
+      name: mssql
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 2Gi

@@ -1,0 +1,5 @@
+/opt/mssql-tools/bin/sqlcmd -S 127.0.0.1 -U sa -P'Pa55w0rd!'
+
+##check hadr status
+SELECT SERVERPROPERTY ('IsHadrEnabled');  
+

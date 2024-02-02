@@ -1,0 +1,11 @@
+https://www.notion.so/Configure-AG-on-Linux-45b34cbc27bc413294a6b96da542859f
+
+
+
+➤ docker network disconnect mynet node_a
+
+
+
+
+
+

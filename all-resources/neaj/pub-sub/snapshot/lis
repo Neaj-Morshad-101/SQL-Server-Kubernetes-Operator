@@ -1,0 +1,38 @@
+[
+  {
+    "name": "mssql-0-Sales-SnapshotRepl-MSSQL-1-1",
+    "date_modified": "2023-11-01T10:47:25.6"
+  },
+  {
+    "name": "MSSQL-0-Sales-SnapshotRepl-1",
+    "date_modified": "2023-11-01T10:46:13.183"
+  },
+  {
+    "name": "Distribution clean up: distribution",
+    "date_modified": "2023-11-01T10:46:12.88"
+  },
+  {
+    "name": "Replication monitoring refresher for distribution.",
+    "date_modified": "2023-11-01T10:45:55.643"
+  },
+  {
+    "name": "Agent history clean up: distribution",
+    "date_modified": "2023-11-01T10:45:55.61"
+  },
+  {
+    "name": "Expired subscription clean up",
+    "date_modified": "2023-11-01T10:45:53.487"
+  },
+  {
+    "name": "Monitor and sync replication agent jobs",
+    "date_modified": "2023-11-01T10:45:53.393"
+  },
+  {
+    "name": "Reinitialize subscriptions having data validation failures",
+    "date_modified": "2023-11-01T10:45:53.043"
+  },
+  {
+    "name": "Replication agents checkup",
+    "date_modified": "2023-11-01T10:45:52.717"
+  }
+]

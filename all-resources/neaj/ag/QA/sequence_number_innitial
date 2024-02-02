@@ -1,0 +1,22 @@
+[
+  {
+    "group_id": "be9be8c9-6e17-1132-bfba-8b7d2c28afdb",
+    "name": "AG1",
+    "resource_id": "{BE9BE8C9-6E17-1132-BFBA-8B7D2C28AFDB}",
+    "resource_group_id": "AG1",
+    "failure_condition_level": 0,
+    "health_check_timeout": 0,
+    "automated_backup_preference": 2,
+    "automated_backup_preference_desc": "secondary",
+    "version": 23,
+    "basic_features": "0",
+    "dtc_support": "0",
+    "db_failover": "0",
+    "is_distributed": "0",
+    "cluster_type": 1,
+    "cluster_type_desc": "none",
+    "required_synchronized_secondaries_to_commit": 0,
+    "sequence_number": 4294967301,
+    "is_contained": "0"
+  }
+]

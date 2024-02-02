@@ -1,0 +1,4 @@
+CREATE DATABASE [db1];
+ALTER DATABASE [db1] SET RECOVERY FULL;
+BACKUP DATABASE [db1]
+   TO DISK = N'/var/opt/mssql/data/db1.bak';

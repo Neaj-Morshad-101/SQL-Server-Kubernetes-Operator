@@ -1,0 +1,178 @@
+https://learn.microsoft.com/en-us/sql/linux/sql-server-linux-availability-group-configure-rs?view=sql-server-ver16
+
+
+
+Create a SQL Server Always On Availability Group (AG) on Linux without a cluster manager. (read-scale only. It doesn't provide high availability)
+
+CLUSTER_TYPE = NONE
+
+
+1. set hosts/hostname?? in each ag instance 
+sudo nano /etc/hostname
+sudo nano /etc/hosts
+
+
+10.128.18.12 node1
+10.128.16.77 node2
+10.128.15.33 node3
+
+
+2. Validate that all the nodes intended to be part of the availability group configuration can communicate with each other.
+A ping to the hostname should reply with the corresponding IP address.
+ping node0 
+ping node1
+
+
+(Optional)Enable an AlwaysOn_health event session
+You can optionally enable extended events (XE) to help with root-cause diagnosis when you troubleshoot an availability group. Run the following command on each instance of SQL Server:
+
+SQL:
+ALTER EVENT SESSION AlwaysOn_health ON SERVER WITH (STARTUP_STATE=ON);
+GO
+
+
+3. Create certificate 
+Update the script with strong passwords. Connect to the primary SQL Server instance. 
+To create the certificate, run the following Transact-SQL script:
+
+CREATE MASTER KEY ENCRYPTION BY PASSWORD = '**<Master_Key_Password>**';
+CREATE CERTIFICATE dbm_certificate WITH SUBJECT = 'dbm';
+BACKUP CERTIFICATE dbm_certificate
+   TO FILE = '/var/opt/mssql/data/dbm_certificate.cer'
+   WITH PRIVATE KEY (
+           FILE = '/var/opt/mssql/data/dbm_certificate.pvk',
+           ENCRYPTION BY PASSWORD = '**<Private_Key_Password>**'
+        );
+
+
+4. At this point, your primary SQL Server replica has a certificate 
+at /var/opt/mssql/data/dbm_certificate.cer and a private key at var/opt/mssql/data/dbm_certificate.pvk. 
+Copy these two files to the 
+**same location on all servers that will host availability replicas**. 
+
+
+Use the mssql user, or give permission to the mssql user to access these files.
+cd /var/opt/mssql/data
+chown mssql:mssql dbm_certificate.*
+
+
+
+5. Create the certificate on secondary servers
+
+The decryption password is the same password that you used to 
+create the .pvk file in a previous step. 
+run the following script on all secondary servers:
+
+CREATE MASTER KEY ENCRYPTION BY PASSWORD = '**<Master_Key_Password>**';
+CREATE CERTIFICATE dbm_certificate
+    FROM FILE = '/var/opt/mssql/data/dbm_certificate.cer'
+    WITH PRIVATE KEY (
+           FILE = '/var/opt/mssql/data/dbm_certificate.pvk',
+           DECRYPTION BY PASSWORD = '**<Private_Key_Password>**'
+        );
+
+
+6. Create the database mirroring endpoints on all replicas
+Update the following Transact-SQL script for your environment on all SQL Server instances:
+
+CREATE ENDPOINT [Hadr_endpoint]
+    AS TCP (LISTENER_PORT = **<5022>**)
+    FOR DATABASE_MIRRORING (
+        ROLE = ALL,
+        AUTHENTICATION = CERTIFICATE dbm_certificate,
+        ENCRYPTION = REQUIRED ALGORITHM AES
+        );
+
+ALTER ENDPOINT [Hadr_endpoint] STATE = STARTED;
+
+
+
+
+The TCP port on the firewall must be open for the listener port.
+
+
+
+
+7. Create the AG. Set CLUSTER_TYPE = NONE. In addition, set each replica with FAILOVER_MODE = MANUAL. 
+
+CREATE AVAILABILITY GROUP [ag1]
+    WITH (CLUSTER_TYPE = NONE)
+    FOR REPLICA ON
+        N'node0' WITH (
+            ENDPOINT_URL = N'tcp://node0:5022',
+            AVAILABILITY_MODE = SYNCHRONOUS_COMMIT,
+            FAILOVER_MODE = MANUAL,
+            SEEDING_MODE = AUTOMATIC,
+            SECONDARY_ROLE (ALLOW_CONNECTIONS = ALL)
+            ),
+        N'node1' WITH ( 
+            ENDPOINT_URL = N'tcp://node1:5022', 
+            AVAILABILITY_MODE = SYNCHRONOUS_COMMIT,
+            FAILOVER_MODE = MANUAL,
+            SEEDING_MODE = AUTOMATIC,
+            SECONDARY_ROLE (ALLOW_CONNECTIONS = ALL)
+            );
+
+ALTER AVAILABILITY GROUP [ag1] GRANT CREATE ANY DATABASE;
+
+
+8. Join secondary SQL Servers to the AG
+The following Transact-SQL script joins a server to an AG named ag1. Update the script for your environment. 
+On each secondary SQL Server replica, 
+run the following Transact-SQL script to join the AG:
+
+
+ALTER AVAILABILITY GROUP [ag1] JOIN WITH (CLUSTER_TYPE = NONE);
+
+ALTER AVAILABILITY GROUP [ag1] GRANT CREATE ANY DATABASE;
+
+
+
+
+
+
+
+
+9. Add a database to the availability group
+
+Ensure that the database you add to the availability group is in the full recovery model and 
+has a valid log backup. If this is a test database or a newly created database, take a database backup. 
+**On the primary SQL Server, 
+run the following Transact-SQL script to create and back up a database called db1:
+
+CREATE DATABASE [db1];
+ALTER DATABASE [db1] SET RECOVERY FULL;
+BACKUP DATABASE [db1]
+   TO DISK = N'/var/opt/mssql/data/db1.bak';
+
+
+On the primary SQL Server replica, 
+run the following Transact-SQL script to add a database called db1 to an availability group called ag1:
+
+ALTER AVAILABILITY GROUP [ag1] ADD DATABASE [db1];
+
+
+
+10. Verify that the database is created on the secondary servers
+On each secondary SQL Server replica, 
+run the following query to see if the db1 database was created and is synchronized:
+
+SELECT * FROM sys.databases WHERE name = 'db1';
+GO
+SELECT DB_NAME(database_id) AS 'database', synchronization_state_desc FROM sys.dm_hadr_database_replica_states;
+
+
+
+(Optinal) Connect to read-only secondary replicas
+There are two ways to connect to read-only secondary replicas. 
+Applications can connect directly to the SQL Server instance that hosts the secondary replica and query the databases. 
+They also can use read-only routing, which requires a listener.
+
+
+
+This AG isn't a high-availability configuration. 
+If you need high availability, follow the instructions at Configure an Always On Availability Group 
+for SQL Server on Linux. Specifically, create the AG with CLUSTER_TYPE=WSFC (in Windows) 
+or CLUSTER_TYPE=EXTERNAL (in Linux). 
+You can then integrate with a cluster manager, by using either Windows Server failover clustering on Windows, 
+or Pacemaker on Linux.

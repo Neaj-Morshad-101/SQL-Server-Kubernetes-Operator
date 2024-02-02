@@ -1,0 +1,6 @@
+/opt/mssql/bin/mssql-conf set sqlagent.enabled true 
+systemctl restart mssql-server
+
+mkdir /var/opt/mssql/data/ReplData/
+chown mssql /var/opt/mssql/data/ReplData/
+chgrp mssql /var/opt/mssql/data/ReplData/

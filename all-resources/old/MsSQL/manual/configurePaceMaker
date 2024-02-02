@@ -1,0 +1,24 @@
+https://learn.microsoft.com/en-us/sql/linux/sql-server-linux-availability-group-cluster-pacemaker?tabs=ubuntu&view=sql-server-ver16
+
+open the ports : 2224,3121,21064,5405/UDP,1433,5022,22
+
+update apt-get : apt-get update 
+
+intall pacemaker: apt-get install -y pacemaker pacemaker-cli-utils crmsh resource-agents fence-agents corosync python3-azure
+
+update hacluster pass : passwd hacluster (hello++00)
+
+apt-get install systemctl 
+
+apt-get install -y pcs
+
+systemctl enable pcsd
+systemctl start pcsd
+systemctl enable pacemaker
+systemctl start pacemaker
+
+kubectl cp mssql-0:/etc/corosync/authkey ./keys
+kubectl cp ./keys mssql-2:/etc/corosync/authkey
+kubectl cp ./keys mssql-1:/etc/corosync/authkey
+
+kubectl cp ./ag/corosync.conf mssql-0:/etc/corosync

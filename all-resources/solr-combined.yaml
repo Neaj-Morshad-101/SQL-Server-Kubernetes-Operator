@@ -1,0 +1,173 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: solr-common
+spec:
+  ports:
+  - name: solr-client
+    port: 80
+    protocol: TCP
+    targetPort: solr-client
+  selector:
+    app: solr
+  type: ClusterIP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: solr
+spec:
+  clusterIP: None
+  ports:
+  - name: solr-client
+    port: 8983
+    protocol: TCP
+    targetPort: solr-client
+  selector:
+    app: solr
+  type: ClusterIP
+
+---
+
+
+
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: solr-config
+stringData:
+  solr.xml: "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n<solr>\n
+   <str name=\"coreRootDirectory\">/var/solr/data</str>\n
+   <str name=\"sharedLib\">${solr.sharedLib:}</str>\n  <solrcloud>\n    <str name=\"host\">${host:}</str>\n    <int name=\"hostPort\">${solr.port.advertise:80}</int>\n    <str name=\"hostContext\">${hostContext:solr}</str>\n    <bool name=\"genericCoreNodeNames\">${genericCoreNodeNames:true}</bool>\n    <int name=\"zkClientTimeout\">${zkClientTimeout:30000}</int>\n    <int name=\"distribUpdateSoTimeout\">${distribUpdateSoTimeout:600000}</int>\n    <int name=\"distribUpdateConnTimeout\">${distribUpdateConnTimeout:60000}</int>\n    <str name=\"zkCredentialsProvider\">${zkCredentialsProvider:org.apache.solr.common.cloud.DefaultZkCredentialsProvider}</str>\n    <str name=\"zkACLProvider\">${zkACLProvider:org.apache.solr.common.cloud.DefaultZkACLProvider}</str>\n  </solrcloud>\n  <shardHandlerFactory name=\"shardHandlerFactory\"\n    class=\"HttpShardHandlerFactory\">\n    <int name=\"socketTimeout\">${socketTimeout:600000}</int>\n    <int name=\"connTimeout\">${connTimeout:60000}</int>\n  </shardHandlerFactory>\n  <int name=\"maxBooleanClauses\">${solr.max.booleanClauses:1024}</int>\n  <str name=\"allowPaths\">${solr.allowPaths:}</str>\n  <metrics enabled=\"${metricsEnabled:true}\"/>\n  \n</solr>\n"
+
+---
+
+# <str name=\"coreRootDirectory\">/opt/solr/server/solr</str>\n <str name=\"configSetBaseDir\">/opt/solr/server/solr</str>\n
+---
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: solr
+  name: solr
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: solr
+  serviceName: solr
+  template:
+    metadata:
+      labels:
+        app: solr
+    spec:
+      containers:
+      - env:
+        - name: SOLR_JAVA_MEM
+          value: -Xms1g -Xmx3g
+        - name: SOLR_HOME
+          value: /var/solr
+        - name: SOLR_PORT
+          value: "8983"
+        - name: SOLR_NODE_PORT
+          value: "8983"
+        - name: SOLR_PORT_ADVERTISE
+          value: "8983"
+        - name: POD_HOSTNAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: SOLR_HOST
+          value: $(POD_NAME).solr.default
+        - name: SOLR_LOG_LEVEL
+          value: INFO
+        - name: GC_TUNE
+          value: -XX:SurvivorRatio=4 -XX:TargetSurvivorRatio=90 -XX:MaxTenuringThreshold=8
+        - name: SOLR_STOP_WAIT
+          value: "55"
+        - name: ZK_HOST
+          #value: zookeeper:2181
+          #value: zookeeper.default.svc.cluster.local:2181
+          value: zookeeper.default.svc.cluster.local:2181
+        - name: ZK_CHROOT
+          value: /
+        - name: ZK_SERVER
+          value: zookeeper.default.svc.cluster.local:2181
+        - name: SOLR_OPTS
+          value: -DhostPort=$(SOLR_NODE_PORT) -Dsolr.autoSoftCommit.maxTime=10000
+        image: library/solr:9.4.0
+        name: solr
+        ports:
+        - containerPort: 8983
+          name: solr-client
+          protocol: TCP
+        volumeMounts:
+        - name: data
+          mountPath: /var/solr/data
+        - name: emp
+          mountPath: /var/solr
+      initContainers:
+      - command:
+        - sh
+        - -c
+        - cp /tmp-config/solr.xml /var/solr/solr.xml
+        image: library/busybox:1.28.0-glibc
+        name: cp-solr-xml
+        resources:
+          limits:
+            cpu: "50e-3"
+            memory: 50M
+          requests:
+            cpu: "50e-3"
+            memory: 50M
+        volumeMounts:
+        - mountPath: /tmp-config
+          name: solr-xml
+        - mountPath: /var/solr
+          name: emp
+      securityContext:
+        fsGroup: 8983
+      volumes:
+      - secret:
+          defaultMode: 444
+          items:
+          - key: solr.xml
+            path: solr.xml
+          secretName: solr-config
+        name: solr-xml
+      - name: emp
+        emptyDir:
+          sizeLimit: 500Mi
+  volumeClaimTemplates:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 3Gi
+      storageClassName: "solr-storage"

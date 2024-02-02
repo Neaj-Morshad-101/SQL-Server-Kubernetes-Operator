@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: repl
+  labels:
+    app: repl
+spec:
+  ports:
+  - port: 1433
+    name: repl
+  - port: 5022
+    name: mirror
+  clusterIP: None
+  selector:
+    app: repl
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: repl
+spec:
+  serviceName: repl
+  replicas: 3
+  selector:
+    matchLabels:
+      app: repl
+  template:
+    metadata:
+      labels:
+        app: repl
+    spec:
+      containers:
+      - name: repl
+        image: neajmorshad/sql22:tools-0.1 # official image: mcr.microsoft.com/mssql/server:2022-latest
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: ACCEPT_EULA
+            value: "Y"
+          - name: MSSQL_SA_PASSWORD
+            value: "Pa55w0rd!"
+          - name: MSSQL_PID
+            value: "Developer"
+          - name: MSSQL_AGENT_ENABLED
+            value: "True"
+          - name: MSSQL_ENABLE_HADR
+            value: "1"
+        ports:
+        - containerPort: 1433
+          name: repl
+        - containerPort: 5022
+          name: mirror
+        volumeMounts:
+        - name: mssql
+          mountPath: /var/opt/mssql
+  volumeClaimTemplates:
+  - metadata:
+      name: mssql
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 2Gi

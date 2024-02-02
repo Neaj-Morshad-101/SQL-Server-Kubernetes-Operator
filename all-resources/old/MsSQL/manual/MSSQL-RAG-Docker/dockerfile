@@ -1,0 +1,29 @@
+FROM ubuntu:20.04
+ 
+RUN apt-get update
+
+RUN apt install nano sudo
+RUN apt install sudo wget curl gnupg gnupg1 gnupg2 -y
+RUN apt install software-properties-common systemd vim -y
+# RUN apt-get install -y pacemaker pacemaker-cli-utils crmsh resource-agents fence-agents corosync python3-azure pcs nano
+
+RUN wget -qO- https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+RUN curl https://packages.microsoft.com/config/ubuntu/20.04/prod.list | sudo tee /etc/apt/sources.list.d/msprod.list
+RUN add-apt-repository "$(wget -qO- https://packages.microsoft.com/config/ubuntu/20.04/mssql-server-2022.list)"
+RUN apt-get update
+RUN apt-get install -y mssql-server-ha
+RUN echo "yes" | apt-get install mssql-tools
+RUN apt-get install -y unixodbc-dev
+
+COPY ./sqlScripts/* /
+# COPY ./authkey /etc/corosync/authkey
+# COPY ./corosync.conf /etc/corosync/corosync.conf
+# COPY ./sc.sh /tmp/sc.sh
+# RUN chmod +x /tmp/sc.sh
+
+RUN /opt/mssql/bin/mssql-conf set hadr.hadrenabled  1
+RUN /opt/mssql/bin/mssql-conf set sqlagent.enabled true
+ 
+EXPOSE 5022 1433 22 2224 3121 21064 5022 5405/UDP
+
+ENTRYPOINT [ "/opt/mssql/bin/sqlservr" ]

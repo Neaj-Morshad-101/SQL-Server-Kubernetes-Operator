@@ -1,0 +1,23 @@
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: mq-gw
+spec:
+  gatewayClassName: eg
+  listeners:
+  - name: mq
+    protocol: TCP
+    port: 1433
+---
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TCPRoute
+metadata:
+  name: mq-rt
+spec:
+  parentRefs:
+  - name: mq-gw
+    sectionName: mq
+  rules:
+  - backendRefs:
+    - name: mssql
+      port: 1433

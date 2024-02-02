@@ -1,0 +1,146 @@
+apt-get install -y software-properties-common 
+apt-get install -y gnupg wget curl 
+apt-get install -y pacemaker pacemaker-cli-utils crmsh resource-agents fence-agents corosync python3-azure
+
+wget -qO- https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+
+add-apt-repository "$(wget -qO- https://packages.microsoft.com/config/ubuntu/20.04/mssql-server-2022.list)"
+
+sudo apt-get update
+
+passwd hacluster
+
+systemctl enable pcsd
+systemctl start pcsd
+systemctl enable pacemaker
+systemctl start pacemaker
+
+corosync-keygen
+kubectl cp mssql-0:/etc/corosync/authkey ./authkey
+kubectl cp ./authkey mssql-1:/etc/corosync/authkey
+kubectl cp ./authkey mssql-2:/etc/corosync/authkey
+
+# edit the file with appropriate node ip before applying the follwoing command
+kubectl cp /home/office/go/src/yamls/MsSQL/manual/ag/corosync.conf mssql-0:/etc/corosync/corosync.conf
+kubectl cp /home/office/go/src/yamls/MsSQL/manual/ag/corosync.conf mssql-1:/etc/corosync/corosync.conf
+kubectl cp /home/office/go/src/yamls/MsSQL/manual/ag/corosync.conf mssql-2:/etc/corosync/corosync.conf
+
+systemctl restart pacemaker corosync
+
+crm configure property stonith-enabled=false
+
+crm configure property cluster-recheck-interval=2min
+crm configure property start-failure-is-fatal=true
+crm configure meta failure-timeout=60s
+
+apt-get install mssql-server-ha
+
+
+## setup AG
+
+echo "10.244.0.0      mssql-0.mssql.default.svc.cluster.local mssql-0
+10.244.0.9      mssql-1.mssql.default.svc.cluster.local mssql-1
+10.244.0.10      mssql-2.mssql.default.svc.cluster.local mssql-2" >> /etc/hosts
+
+apt-get install systemctl
+
+sudo /opt/mssql/bin/mssql-conf set hadr.hadrenabled 1
+sudo systemctl restart mssql-server
+
+SELECT SERVERPROPERTY ('IsHadrEnabled');
+# settings path /var/opt/mssql/mssql.conf
+
+ALTER EVENT SESSION  AlwaysOn_health ON SERVER WITH (STARTUP_STATE=ON);
+
+
+CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'hello++00A';
+CREATE CERTIFICATE dbm_certificate WITH SUBJECT = 'dbm';
+GO
+BACKUP CERTIFICATE dbm_certificate TO FILE = '/var/opt/mssql/data/dbm_certificate.cer'
+WITH PRIVATE KEY (FILE = '/var/opt/mssql/data/dbm_certificate.pvk',ENCRYPTION BY PASSWORD = 'hello++00B');
+GO
+
+kubectl cp mssql-0:/var/opt/mssql/data/dbm_certificate.cer ./dbm_certificate.cer
+kubectl cp mssql-0:/var/opt/mssql/data/dbm_certificate.pvk ./dbm_certificate.pvk
+
+kubectl cp ./dbm_certificate.cer mssql-1:/var/opt/mssql/data/dbm_certificate.cer
+kubectl cp ./dbm_certificate.pvk mssql-1:/var/opt/mssql/data/dbm_certificate.pvk
+
+kubectl cp ./dbm_certificate.cer mssql-2:/var/opt/mssql/data/dbm_certificate.cer
+kubectl cp ./dbm_certificate.pvk mssql-2:/var/opt/mssql/data/dbm_certificate.pvk
+
+cd /var/opt/mssql/data
+chown mssql:mssql dbm_certificate.*
+
+
+CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'hello++00A';
+CREATE CERTIFICATE dbm_certificate
+FROM FILE = '/var/opt/mssql/data/dbm_certificate.cer'
+WITH PRIVATE KEY (FILE = '/var/opt/mssql/data/dbm_certificate.pvk',DECRYPTION BY PASSWORD = 'hello++00B');
+
+
+
+
+CREATE ENDPOINT [Hadr_endpoint]
+    AS TCP (LISTENER_PORT = 5022)
+    FOR DATABASE_MIRRORING (
+        ROLE = ALL,
+        AUTHENTICATION = CERTIFICATE dbm_certificate,
+        ENCRYPTION = REQUIRED ALGORITHM AES
+        );
+GO
+ALTER ENDPOINT [Hadr_endpoint] STATE = STARTED;
+GO
+
+
+
+CREATE AVAILABILITY GROUP [ag1]
+     WITH (DB_FAILOVER = ON, CLUSTER_TYPE = EXTERNAL)
+     FOR REPLICA ON
+         N'mssql-0' 
+ 	      	WITH (
+  	       ENDPOINT_URL = N'tcp://mssql-0:5022',
+  	       AVAILABILITY_MODE = SYNCHRONOUS_COMMIT,
+  	       FAILOVER_MODE = EXTERNAL,
+  	       SEEDING_MODE = AUTOMATIC
+  	       ),
+         N'mssql-1' 
+  	    WITH ( 
+  	       ENDPOINT_URL = N'tcp://mssql-1:5022', 
+  	       AVAILABILITY_MODE = SYNCHRONOUS_COMMIT,
+  	       FAILOVER_MODE = EXTERNAL,
+  	       SEEDING_MODE = AUTOMATIC
+  	       ),
+  	   N'mssql-2'
+         WITH( 
+  	      ENDPOINT_URL = N'tcp://mssql-2:5022', 
+  	      AVAILABILITY_MODE = SYNCHRONOUS_COMMIT,
+  	      FAILOVER_MODE = EXTERNAL,
+  	      SEEDING_MODE = AUTOMATIC
+  	      );
+
+ALTER AVAILABILITY GROUP [ag1] GRANT CREATE ANY DATABASE;
+
+
+
+CREATE LOGIN pacemaker WITH PASSWORD = 'P@cemaker@12'
+
+echo 'P@cemaker@12' >> ~/pacemaker-passwd
+
+GRANT ALTER, CONTROL, VIEW DEFINITION ON AVAILABILITY GROUP::ag1 TO pacemaker
+GRANT VIEW SERVER STATE TO pacemaker
+
+ALTER AVAILABILITY GROUP [ag1] JOIN WITH (CLUSTER_TYPE = EXTERNAL);
+		 
+ALTER AVAILABILITY GROUP [ag1] GRANT CREATE ANY DATABASE;
+
+
+CREATE DATABASE [db1];
+ALTER DATABASE [db1] SET RECOVERY FULL;
+BACKUP DATABASE [db1]
+   TO DISK = N'/var/opt/mssql/data/db1.bak';
+
+   ALTER AVAILABILITY GROUP [ag1] ADD DATABASE [db1];
+
+
+   sqlcmd -S <server Name> -U sa -P sapassword -i inputquery_file_name -o outputfile_name

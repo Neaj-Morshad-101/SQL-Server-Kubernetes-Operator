@@ -1,0 +1,91 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mssql-read
+  labels:
+    app: mssql-read
+spec:
+  ports:
+  - port: 1433
+    name: mssql-read
+  - port: 22
+    name: scp
+  - port: 2224
+    name: pm1
+  - port: 3121
+    name: pm2
+  - port: 21064
+    name: pm3
+  - port: 5405
+    protocol: UDP
+    name: pm4
+  - port: 5022
+    name: mirror
+  clusterIP: None
+  selector:
+    app: mssql-read
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mssql-read
+spec:
+  serviceName: mssql-read
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mssql-read
+  template:
+    metadata:
+      labels:
+        app: mssql-read
+    spec:
+      containers:
+      - name: mssql-read
+        image: mssql-optimized:vtest #msread:v1 #sqlag2020:v1 #mcr.microsoft.com/mssql/server:2019-latest #jrei/systemd-ubuntu:20.04 #ubuntu:20.04 #
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: ACCEPT_EULA
+            value: "Y"
+          - name: MSSQL_SA_PASSWORD
+            value: "Pa55w0rd!"
+          - name: MSSQL_PID
+            value: "Developer"
+          - name: MSSQL_AGENT_ENABLED
+            value: "True"
+        # lifecycle: 
+        #   postStart:
+        #     exec: 
+        #       command: ["/bin/sh", "-c", "ls /opt/mssql/bin && /opt/mssql/bin/mssql-conf set hadr.hadrenabled 1"]
+        # command: ["/bin/sleep", "3650d"]
+        ports:
+        - containerPort: 1433
+          name: mssql-read
+        - containerPort: 22
+          name: scp
+        - containerPort: 2224
+          name: pm1
+        - containerPort: 3121
+          name: pm2
+        - containerPort: 21064
+          name: pm3
+        - containerPort: 5405
+          protocol: UDP
+          name: pm4
+        - containerPort: 5022
+          name: mirror
+        securityContext:
+          privileged: false
+          runAsGroup: 0
+          runAsUser: 0 
+  #       volumeMounts:
+  #       - name: www
+  #         mountPath: /usr/share/nginx/html
+  # volumeClaimTemplates:
+  # - metadata:
+  #     name: www
+  #   spec:
+  #     accessModes: [ "ReadWriteOnce" ]
+  #     resources:
+  #       requests:
+  #         storage: 1Gi
