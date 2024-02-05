@@ -95,14 +95,14 @@ kubectl port-forward repl-0 1400:1433
 ```
 
 Create connection profile for pod using following information: 
-Server name: 127.0.0.1,1400
-Database name: (Press enter)
-Select: SQL Login
-username: sa 
-Password: Pa55w0rd!
-Give profile name: repl-0
+Server name: 127.0.0.1,1400   
+Database name: (Press enter)  
+Select: SQL Login  
+username: sa   
+Password: Pa55w0rd!   
+Give profile name: repl-0  
 
-Create a test.sql file and select the part of commands you want to run, 
+Create a test.sql file and select the part of commands you want to run,    
 Right Click -> Execute query -> select profile.
 
 
