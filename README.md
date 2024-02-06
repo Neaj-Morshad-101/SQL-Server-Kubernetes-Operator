@@ -89,20 +89,37 @@ PING repl-1.repl.default.svc.cluster.local (10.244.0.32) 56(84) bytes of data.
 ### Need to Install mssql extension for Visual Studio Code for easy query execution.
 https://learn.microsoft.com/en-us/sql/tools/visual-studio-code/mssql-extensions?view=sql-server-ver16
 
+
+### Install mssql extention 
+https://learn.microsoft.com/en-us/sql/tools/visual-studio-code/mssql-extensions?view=sql-server-ver16#getting-started-with-the-mssql-extension-in-vs-code
+
+
 Port forward to the pod where we want to run query:
 ```
 kubectl port-forward repl-0 1400:1433
 ```
 
-Create connection profile for pod using following information: 
+
+
+
+Create connection profile for pod 
+https://learn.microsoft.com/en-us/sql/tools/visual-studio-code/mssql-extensions?view=sql-server-ver16#connect-and-query
+
+
+Using information like:     
 Server name: 127.0.0.1,1400   
 Database name: (Press enter)  
-Select: SQL Login  
+Select: SQL Login   
 username: sa   
-Password: Pa55w0rd!   
-Give profile name: repl-0  
+Password: Pa55w0rd!  
+Give profile name: repl-0   
 
-Create a test.sql file and select the part of commands you want to run,    
+Remember: The password is the MSSQL_SA_PASSWORD used in the statefulset
+Use strong password, at least 8 character and include digit, special chars
+
+
+Create a test.sql file   
+Select the part of commands you want to run,        
 Right Click -> Execute query -> select profile.
 
 
@@ -133,7 +150,7 @@ We can pass a sql file to cli to execute like this:
 
 ```
 
-Remember: Use strong password, at least 8 character and include digit, special chars
+
 
 
 ### Create the availability group endpoints and certificates on the primary replica
@@ -372,7 +389,7 @@ ALTER AVAILABILITY GROUP ag1 FORCE_FAILOVER_ALLOW_DATA_LOSS;
 
 
 ```
---  After failover, secondary databases are suspended, we need change the role and resume synchronization from the new primary. It may need to be done in the secondary replica also.
+--  After failover, all secondary databases are suspended, we need to change the role and resume synchronization from the old primary replica. It need to be done for the secondary replicas also.
 use [master]
 ALTER AVAILABILITY GROUP [ag1] 
      SET (ROLE = SECONDARY); 
@@ -382,10 +399,18 @@ ALTER DATABASE [agtestdb]
      SET HADR RESUME
 ```
 
+If old primary was unavailable / offline during the force-failver:
+
 ```
--- we need to make the AG offline when the old primary joins back. to change it's role from primary to secondary. (if it wasn't online during fail-over, then  after joining it's role will be primary also)
+-- we need to make the AG offline when the old primary joins back. to change it's role from primary to secondary. (if it wasn't online during fail-over, then  after joining it's role will be primary also, Old primary's role will not be changed by running    
+ALTER AVAILABILITY GROUP [ag1] 
+     SET (ROLE = SECONDARY);
+
+-- We need to make the AG offline from the old primary then it's role will be "RESOLVING".      
 USE [master]
 ALTER AVAILABILITY GROUP [ag1] OFFLINE
+
+-- Now we can change it's role by running the following command
 
 use [master]
 ALTER AVAILABILITY GROUP [ag1] 
@@ -424,6 +449,16 @@ ALTER AVAILABILITY GROUP [ag1]
                );
 ```
 
+
+We have to Join Availability Group​ from newly added replica: repl-3
+```
+ALTER AVAILABILITY GROUP [ag1] JOIN WITH (CLUSTER_TYPE = NONE);
+```
+
+```
+ALTER AVAILABILITY GROUP [ag1] GRANT CREATE ANY DATABASE;
+GO
+```
 
 
 
