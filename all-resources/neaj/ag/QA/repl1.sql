@@ -197,3 +197,35 @@ GO
 
 use [master]
 select * from sys.dm_hadr_availability_replica_states
+
+
+
+
+
+
+SELECT * FROM fn_dblog (
+              NULL, -- Start LSN nvarchar(25)
+              NULL  -- End LSN nvarchar(25)
+       )
+
+
+
+
+SELECT 
+	ar.replica_server_name, 
+	adc.database_name, 
+	ag.name AS ag_name, 
+    drs.end_of_log_lsn,
+	drs.last_sent_lsn, 
+	drs.last_received_lsn, 
+	drs.last_hardened_lsn, 
+	drs.last_commit_lsn
+FROM sys.dm_hadr_database_replica_states AS drs
+INNER JOIN sys.availability_databases_cluster AS adc 
+	ON drs.group_id = adc.group_id AND 
+	drs.group_database_id = adc.group_database_id
+INNER JOIN sys.availability_groups AS ag
+	ON ag.group_id = drs.group_id
+INNER JOIN sys.availability_replicas AS ar 
+	ON drs.group_id = ar.group_id AND 
+	drs.replica_id = ar.replica_id

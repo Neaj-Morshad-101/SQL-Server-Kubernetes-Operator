@@ -1,0 +1,19 @@
+apiVersion: kubedb.com/v1alpha2
+kind: MsSQL
+metadata:
+  name: mssql-standalone
+  namespace: demo
+spec:
+  version: "latest"  # Specify the desired version, e.g., "2019-CU12-GDR" or "2017-CU24-GDR"
+  replicas: 1        # Number of instances to deploy
+  topology:
+    mode: Standalone
+  storageType: Durable
+  storage:
+    storageClassName: "standard"
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: 1Gi
+  terminationPolicy: Delete
