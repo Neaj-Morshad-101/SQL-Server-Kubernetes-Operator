@@ -1,5 +1,15 @@
 # With sqlcmd tools installed, sql22 sudo nano 
 # use this image as : neajmorshad/sql22:tools-0.1
+
+
+# https://github.com/Microsoft/mssql-docker
+# https://raw.githubusercontent.com/microsoft/mssql-docker/master/linux/preview/examples/mssql-server-linux-non-root/Dockerfile
+# https://github.com/microsoft/mssql-docker/blob/master/windows/mssql-server-windows-developer/dockerfile
+# https://github.com/microsoft/mssql-docker/blob/master/linux/preview/examples/mssql-agent-fts-ha-tools/Dockerfile
+
+
+
+
 FROM ubuntu:20.04       
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -15,10 +25,6 @@ RUN add-apt-repository "$(wget -qO- https://packages.microsoft.com/config/ubuntu
 RUN apt-get update
 RUN apt-get install -y mssql-server
 
-# Enable hadr
-# RUN /opt/mssql/bin/mssql-conf set hadr.hadrenabled  1
-# Enable sqlagent 
-# RUN /opt/mssql/bin/mssql-conf set sqlagent.enabled true
 
 # Accept the EULA for msodbcsql18 during installation
 RUN echo "msodbcsql18 msodbcsql/ACCEPT_EULA boolean true" | debconf-set-selections

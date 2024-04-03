@@ -1,7 +1,7 @@
 apiVersion: kubedb.com/v1alpha2
 kind: MsSQL
 metadata:
-  name: ag
+  name: ag-custom
   namespace: demo
 spec:
   version: "latest"  # Specify the desired version, e.g., "2019-CU12-GDR" or "2017-CU24-GDR"
