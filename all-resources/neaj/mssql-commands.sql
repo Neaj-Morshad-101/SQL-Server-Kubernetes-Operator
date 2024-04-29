@@ -15,6 +15,13 @@ GO
 
 -------------------------------- SELECT / GET ----------------------------------- 
 
+
+/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!"
+
+select name from sys.databases
+
+
+
 SELECT name FROM master.dbo.sysdatabases;
 GO 
 
@@ -32,7 +39,92 @@ SELECT * FROM sys.dm_exec_connections
 
 
 
+
+/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!"
+
+SELECT name FROM sys.databases
+GO
+
+CREATE DATABASE std;
+GO
+
+
+USE std
+GO
+CREATE TABLE Data (ID INT, NAME NVARCHAR(255), AGE INT);
+INSERT INTO Data(ID, Name, Age) VALUES (1, 'John Doe', 25), (2, 'Jane Smith', 30);                                                                                    
+GO 
+
+SELECT * from data;
+go
+
+
+
+USE AgDB1
+GO
+INSERT INTO Data(ID, Name, Age) VALUES (3, 'John Doe', 25), (4, 'Jane Smith', 30);                                                                                    
+GO 
+
+
+
+USE AgDB1
+GO
+INSERT INTO Data(ID, Name, Age) VALUES (5, 'John Doe', 25), (6, 'Jane Smith', 30);                                                                                    
+GO 
+
+SELECT role_desc FROM sys.dm_hadr_availability_replica_states WHERE replica_id = (SELECT replica_id FROM sys.availability_replicas WHERE replica_server_name = 'ag-custom-0')
+
+
+
+
+use [master]
+ALTER AVAILABILITY GROUP [agcustom] 
+SET (ROLE = SECONDARY); 
+
+
+
+
+
+
 ------------------------ Dynamic Management Views ------------------------------
+
+SELECT sequence_number FROM sys.availability_groups
+
+-- last commit lsn 
+SELECT * FROM sys.dm_hadr_database_replica_states;
+
+SELECT last_commit_lsn FROM sys.dm_hadr_database_replica_states;
+
+select database_name from sys.availability_databases_cluster
+
+/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!"
+
+
+SELECT 
+	ar.replica_server_name, 
+	adc.database_name, 
+	ag.name AS ag_name, 
+	drs.is_local, 
+	drs.is_primary_replica, 
+	drs.synchronization_health_desc, 
+	drs.last_commit_lsn
+FROM sys.dm_hadr_database_replica_states AS drs
+INNER JOIN sys.availability_databases_cluster AS adc 
+	ON drs.group_id = adc.group_id AND 
+	drs.group_database_id = adc.group_database_id
+INNER JOIN sys.availability_groups AS ag
+	ON ag.group_id = drs.group_id
+INNER JOIN sys.availability_replicas AS ar 
+	ON drs.group_id = ar.group_id AND 
+	drs.replica_id = ar.replica_id
+ORDER BY 
+	ag.name, 
+	ar.replica_server_name, 
+	adc.database_name;
+
+
+
+
 
 SELECT * FROM sys.dm_hadr_availability_replica_states
 

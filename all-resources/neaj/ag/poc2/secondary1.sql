@@ -19,7 +19,7 @@ CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Password1';
 GO
 -- Paste the certificate to secondary first 
 CREATE CERTIFICATE dbm_certificate
-   AUTHORIZATION dbm_user
+--    AUTHORIZATION dbm_user
    FROM FILE = '/tmp/dbm_certificate.cer'
    WITH PRIVATE KEY (
    FILE = '/tmp/dbm_certificate.pvk',
@@ -52,6 +52,9 @@ Setup health monitoring for the servers
 ALTER EVENT SESSION  AlwaysOn_health ON SERVER WITH (STARTUP_STATE=ON);
 GO
 
+
+use master
+go
 
 -- *** Step: D02
 ALTER AVAILABILITY GROUP [ag1] JOIN WITH (CLUSTER_TYPE = NONE);
@@ -89,6 +92,9 @@ WHERE primary_replica = @@Servername;
 
 -- Step: M05
 -- Promote the target secondary replica to primary.
+
+use master
+go
 ALTER AVAILABILITY GROUP ag1 FORCE_FAILOVER_ALLOW_DATA_LOSS; 
 
 
@@ -118,7 +124,7 @@ SELECT * FROM inventory;
 GO
 USE agtestdb;
 GO
-INSERT INTO inventory VALUES (6, 'test=7', 777);
+INSERT INTO inventory VALUES (3, 'test=7', 777);
 GO
 
 use [agtestdb]
