@@ -4,7 +4,9 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="00699d7c-4ace-4b15-b8b5-b5f36fe03d67" name="Changes" comment="" />
+    <list default="true" id="00699d7c-4ace-4b15-b8b5-b5f36fe03d67" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/all-resources/neaj/mssql-commands.sql" beforeDir="false" afterPath="$PROJECT_DIR$/all-resources/neaj/mssql-commands.sql" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -18,22 +20,20 @@
     <option name="indexEntireGoPath" value="true" />
   </component>
   <component name="KubernetesApiProvider"><![CDATA[{
-  "contexts": [
+  "configuredContexts": [
     {
-      "name": "kind-kind"
+      "name": "kind-kind",
+      "kubeConfigUrl": "file:///home/neaj/.kube/config"
     }
   ],
   "isMigrated": true
 }]]></component>
-  <component name="KubernetesSettings">
-    <option name="contextName" value="kind-kind" />
-  </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 4
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 4
+}</component>
   <component name="ProjectId" id="2bvwShsJwiu3tF1vyBSb4sV0wUJ" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -43,6 +43,7 @@
   "keyToString": {
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.go.formatter.settings.were.checked": "true",
     "RunOnceActivity.go.migrated.go.modules.settings": "true",
     "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
@@ -50,10 +51,20 @@
     "git-widget-placeholder": "main",
     "go.import.settings.migrated": "true",
     "go.sdk.automatically.set": "true",
-    "last_opened_file_path": "/home/neaj",
+    "last_opened_file_path": "/home/neaj/go/src/github.com/Neaj-Morshad-101/SQL-Server-Kubernetes-Operator",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
     "nodejs_package_manager_path": "npm"
   }
 }]]></component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-gosdk-d297c17c1fbd-b87a2f8923ed-org.jetbrains.plugins.go.sharedIndexes.bundled-GO-243.21565.208" />
+        <option value="bundled-js-predefined-d6986cc7102b-e768b9ed790e-JavaScript-GO-243.21565.208" />
+      </set>
+    </attachedChunks>
+  </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />

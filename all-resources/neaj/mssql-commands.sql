@@ -125,7 +125,7 @@ ORDER BY
 
 
 
-
+	
 SELECT * FROM sys.dm_hadr_availability_replica_states
 
 SELECT * FROM sys.dm_hadr_availability_group_states;
