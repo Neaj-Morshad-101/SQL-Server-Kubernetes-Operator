@@ -31,7 +31,7 @@ spec:
     spec:
       containers:
       - name: repl
-        image: neajmorshad/sql22:tools-0.1 # official image: mcr.microsoft.com/mssql/server:2022-latest
+        image: neajmorshad/sql22ubuntu20:latest # official image: mcr.microsoft.com/mssql/server:2022-latest
         imagePullPolicy: IfNotPresent
         env:
           - name: ACCEPT_EULA
