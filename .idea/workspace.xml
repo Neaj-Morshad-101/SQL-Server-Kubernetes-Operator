@@ -5,7 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="00699d7c-4ace-4b15-b8b5-b5f36fe03d67" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/all-resources/neaj/mssql-commands.sql" beforeDir="false" afterPath="$PROJECT_DIR$/all-resources/neaj/mssql-commands.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -19,15 +19,15 @@
   <component name="GoLibraries">
     <option name="indexEntireGoPath" value="true" />
   </component>
-  <component name="KubernetesApiProvider"><![CDATA[{
-  "configuredContexts": [
+  <component name="KubernetesApiProvider">{
+  &quot;configuredContexts&quot;: [
     {
-      "name": "kind-kind",
-      "kubeConfigUrl": "file:///home/neaj/.kube/config"
+      &quot;name&quot;: &quot;kind-kind&quot;,
+      &quot;kubeConfigUrl&quot;: &quot;file:///home/neaj/.kube/config&quot;
     }
   ],
-  "isMigrated": true
-}]]></component>
+  &quot;isMigrated&quot;: true
+}</component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
   </component>
@@ -51,7 +51,7 @@
     "git-widget-placeholder": "main",
     "go.import.settings.migrated": "true",
     "go.sdk.automatically.set": "true",
-    "last_opened_file_path": "/home/neaj/go/src/github.com/Neaj-Morshad-101/SQL-Server-Kubernetes-Operator",
+    "last_opened_file_path": "/home/neaj/go/src/go.appscode.dev/alerts",
     "node.js.detected.package.eslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "nodejs_package_manager_path": "npm"

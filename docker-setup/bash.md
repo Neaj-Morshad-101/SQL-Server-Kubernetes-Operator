@@ -1,10 +1,10 @@
-`docker run -h node_b --name node_b -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=Pa55w0rd!' -e 'MSSQL_AGENT_ENABLED=True' -p 1472:1433 -d [mcr.microsoft.com/mssql/server:2019-latest](http://mcr.microsoft.com/mssql/server:2019-latest)`
+`docker run -h node_b --name node_b -e 'ACCEPT_EULA=Y' -e 'MSSQL_SA_PASSWORD=Pa55w0rd!' -e 'MSSQL_AGENT_ENABLED=True' -p 1472:1433 -d [mcr.microsoft.com/mssql/server:2019-latest](http://mcr.microsoft.com/mssql/server:2019-latest)`
 
-`docker run -h node_c --name node_c -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=Pa55w0rd!' -e 'MSSQL_AGENT_ENABLED=True' -p 1473:1433 -d [mcr.microsoft.com/mssql/server:2019-latest](http://mcr.microsoft.com/mssql/server:2019-latest)`
+`docker run -h node_c --name node_c -e 'ACCEPT_EULA=Y' -e 'MSSQL_SA_PASSWORD=Pa55w0rd!' -e 'MSSQL_AGENT_ENABLED=True' -p 1473:1433 -d [mcr.microsoft.com/mssql/server:2019-latest](http://mcr.microsoft.com/mssql/server:2019-latest)`
 
 `docker network create mynet`
 
-`docker run -h node_a --name node_a -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=Pa55w0rd!' -e 'MSSQL_AGENT_ENABLED=True' -p 1471:1433 -d [mcr.microsoft.com/mssql/server:2019-latest](http://mcr.microsoft.com/mssql/server:2019-latest)`
+`docker run -h node_a --name node_a -e 'ACCEPT_EULA=Y' -e 'MSSQL_SA_PASSWORD=Pa55w0rd!' -e 'MSSQL_AGENT_ENABLED=True' -p 1471:1433 -d [mcr.microsoft.com/mssql/server:2019-latest](http://mcr.microsoft.com/mssql/server:2019-latest)`
 
 `docker network connect mynet node_c
 docker network connect mynet node_b
