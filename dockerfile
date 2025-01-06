@@ -1,5 +1,4 @@
-# With sqlcmd tools installed, sql22 sudo nano 
-# use this image as : neajmorshad/sql22:tools-0.1
+# Customized image for sqlsever: neajmorshad/sql22ubuntu20:latest   sqlsever, sqlcmd tools installed with other tools like sudo nano
 
 
 # https://github.com/Microsoft/mssql-docker
