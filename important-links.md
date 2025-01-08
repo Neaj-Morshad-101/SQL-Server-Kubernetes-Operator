@@ -19,6 +19,8 @@ docker network setup:
 pub-sub:
 - https://learn.microsoft.com/en-us/sql/linux/sql-server-linux-replication-tutorial-tsql?view=sql-server-ver16
 
+mssql-server-ha
+https://github.com/microsoft/mssql-server-ha
 
 
 

@@ -1,7 +1,8 @@
-# MS SQL Server POC resources
+# Microsoft SQL Server Kubernetes Operator POC resources
+
+## Create and Configure Microsoft SQL Server Availability Group cluster on kubernetes.
 
 
-## Create and configure sql server availability group on kubernetes: 
 
 
 ### Enable the availability groups feature 
