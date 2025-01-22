@@ -1,37 +1,39 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: repl
+  name: ag1
+  namespace: dag
   labels:
-    app: repl
+    app: ag1
 spec:
   ports:
   - port: 1433
-    name: repl
+    name: db
   - port: 5022
     name: mirror
   clusterIP: None
   selector:
-    app: repl
+    app: ag1
 ---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: repl
+  name: ag1
+  namespace: dag
 spec:
-  serviceName: repl
+  serviceName: ag1
   replicas: 3
   selector:
     matchLabels:
-      app: repl
+      app: ag1
   template:
     metadata:
       labels:
-        app: repl
+        app: ag1
     spec:
       containers:
-      - name: repl
-        image: neajmorshad/sql22ubuntu20:latest # official image: mcr.microsoft.com/mssql/server:2022-latest
+      - name: mssql
+        image: neajmorshad/sql-server-2022:latest # official image: mcr.microsoft.com/mssql/server:2022-latest
         imagePullPolicy: IfNotPresent
         env:
           - name: ACCEPT_EULA
@@ -46,7 +48,7 @@ spec:
             value: "1"
         ports:
         - containerPort: 1433
-          name: repl
+          name: db
         - containerPort: 5022
           name: mirror
         volumeMounts:

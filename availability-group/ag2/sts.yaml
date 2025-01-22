@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ag2
+  namespace: dag
+  labels:
+    app: ag2
+spec:
+  ports:
+  - port: 1433
+    name: db
+  - port: 5022
+    name: mirror
+  clusterIP: None
+  selector:
+    app: ag2
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ag2
+  namespace: dag
+spec:
+  serviceName: ag2
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ag2
+  template:
+    metadata:
+      labels:
+        app: ag2
+    spec:
+      containers:
+      - name: mssql
+        image: neajmorshad/sql-server-2022:latest # official image: mcr.microsoft.com/mssql/server:2022-latest
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: ACCEPT_EULA
+            value: "Y"
+          - name: MSSQL_SA_PASSWORD
+            value: "Pa55w0rd!"
+          - name: MSSQL_PID
+            value: "Developer"
+          - name: MSSQL_AGENT_ENABLED
+            value: "True"
+          - name: MSSQL_ENABLE_HADR
+            value: "1"
+        ports:
+        - containerPort: 1433
+          name: db
+        - containerPort: 5022
+          name: mirror
+        volumeMounts:
+        - name: mssql
+          mountPath: /var/opt/mssql
+  volumeClaimTemplates:
+  - metadata:
+      name: mssql
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 2Gi
