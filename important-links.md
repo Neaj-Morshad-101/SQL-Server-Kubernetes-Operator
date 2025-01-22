@@ -32,5 +32,6 @@ https://learn.microsoft.com/en-us/sql/database-engine/availability-groups/window
 configure: 
 https://learn.microsoft.com/en-us/sql/database-engine/availability-groups/windows/configure-distributed-availability-groups?view=sql-server-ver16&tabs=automatic
 
-
+blog:
+https://medium.com/trendyol-tech/distributed-availability-groups-in-sql-server-79972ebd7e45
 

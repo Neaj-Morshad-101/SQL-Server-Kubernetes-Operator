@@ -51,7 +51,7 @@
     "git-widget-placeholder": "main",
     "go.import.settings.migrated": "true",
     "go.sdk.automatically.set": "true",
-    "last_opened_file_path": "/home/neaj/go/src/kubedb.dev/crd-manager",
+    "last_opened_file_path": "/home/neaj/go/src/kubedb.dev/redis",
     "node.js.detected.package.eslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "nodejs_package_manager_path": "npm"
@@ -59,9 +59,12 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/availability-group" />
       <recent name="$PROJECT_DIR$/DAG/kubedb" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/availability-group" />
+      <recent name="$PROJECT_DIR$/all-resources" />
       <recent name="$PROJECT_DIR$/kubedb/DAG" />
     </key>
   </component>
