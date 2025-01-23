@@ -14,7 +14,7 @@ sudo /opt/mssql/bin/mssql-conf set sqlagent.enabled true
 ```
 But we need to restart the `mssql-server.service` to apply these settings.
 
-Alternatively, We can enable these features using environment variables, as shown in the provided StatefulSet:
+Alternatively, We can enable these features using environment variables, as shown in the provided [StatefulSet](availability-group/ag1/sts.yaml):
 ```
           - name: MSSQL_AGENT_ENABLED
             value: "True"
@@ -23,7 +23,7 @@ Alternatively, We can enable these features using environment variables, as show
 ```
 
 
-### Create StatefulSet and a Headless Service for communication between availability group replicas
+### Create [StatefulSet and a Headless Service](availability-group/ag1/sts.yaml) for communication between availability group replicas
 
 ```
 kubectl apply -f availability-group/ag1/sts.yaml
@@ -610,7 +610,7 @@ ALTER DATABASE [agtestdb]
 
 
 
-### Add or remove replca in AG
+### Add or remove replica in AG
 ```
 USE [master]
 ALTER AVAILABILITY GROUP [ag1]
@@ -907,7 +907,7 @@ Create two cluster and create two AG. We have to create Load balancer service fo
 
 
 
-Check resources related to these stuff [important-links](important-links.md)
+### Check out [Resources](important-links.md) related to Availability Group and Distributed Availability Group. 
 
 
 
