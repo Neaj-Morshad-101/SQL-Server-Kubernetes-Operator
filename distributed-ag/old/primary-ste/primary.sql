@@ -324,12 +324,10 @@ SELECT * FROM sys.availability_replicas
 
 
 use [master]
-ALTER AVAILABILITY GROUP [distributedag] 
-     SET (ROLE = SECONDARY); 
+ALTER AVAILABILITY GROUP [dag]  SET (ROLE = SECONDARY);
 
 use [master]
-ALTER DATABASE [agtestdb]
-     SET HADR RESUME
+ALTER DATABASE [agtestdb] SET HADR RESUME
 
 
 

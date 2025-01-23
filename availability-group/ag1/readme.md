@@ -572,12 +572,10 @@ ALTER AVAILABILITY GROUP ag1 FORCE_FAILOVER_ALLOW_DATA_LOSS;
 ```
 --  After failover, all secondary databases are suspended, we need to change the role and resume synchronization from the old primary replica. It need to be done for the secondary replicas also.
 use [master]
-ALTER AVAILABILITY GROUP [ag1] 
-     SET (ROLE = SECONDARY); 
+ALTER AVAILABILITY GROUP [ag1]  SET (ROLE = SECONDARY); 
 
 use [master]
-ALTER DATABASE [agtestdb]
-     SET HADR RESUME
+ALTER DATABASE [agtestdb] SET HADR RESUME
 ```
 
 If old primary was unavailable / offline during the force fail-over:
