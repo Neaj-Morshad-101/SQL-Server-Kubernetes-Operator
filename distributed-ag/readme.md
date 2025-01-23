@@ -26,3 +26,7 @@
 ### **Benefits**
 - Supports hybrid AG configurations (different versions/settings).  
 - Simplifies large-scale migrations with minimal downtime.  
+
+
+## Configure Distributed Availability Group on Kubernetes
+

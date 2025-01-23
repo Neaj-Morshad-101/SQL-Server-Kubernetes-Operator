@@ -1,9 +1,13 @@
 ## Create and Configure Microsoft SQL Server Availability Group cluster on Kubernetes
 
 
+### Creating AG2 for Distributed Availability Group Setup. 
+AG2 will be used as a secondary of DAG. For Distributed Availability Groups (DAG), you need to ensure consistent authentication across both AG replicas (ag1 and ag2). This means:
+- Both AGs must use identical login credentials, same DBM Login and Password
+- The master key encryption password must be the same, same Master Key Encryption Password
+- The certificates used for endpoint authentication must be the same, The endpoint configurations must match
 
-
-### Enable the Availability Groups Feature and SQL Server Agent
+#### Enable the Availability Groups Feature and SQL Server Agent
 
 We can enable features using the mssql-conf utility:
 ```
@@ -12,7 +16,7 @@ sudo /opt/mssql/bin/mssql-conf set sqlagent.enabled true
 ```
 But we need to restart the `mssql-server.service` to apply these settings.
 
-Alternatively, We can enable these features using environment variables, as shown in the provided [StatefulSet](availability-group/ag2/sts.yaml):
+Alternatively, We can enable these features using environment variables, as shown in the provided [StatefulSet](sts.yaml):
 ```
           - name: MSSQL_AGENT_ENABLED
             value: "True"
@@ -24,7 +28,7 @@ Alternatively, We can enable these features using environment variables, as show
 ### Create [StatefulSet and a Headless Service](sts.yaml) for communication between availability group replicas
 
 ```
-kubectl apply -f availability-group/ag2/sts.yaml
+kubectl apply -f sts.yaml
 ```
 
 Check StatefulSet, pod, service, and PVC status:
@@ -53,10 +57,10 @@ persistentvolumeclaim/mssql-ag2-2   Bound    pvc-8d0a0500-3665-424c-aa1a-18d1db4
 Ensure each SQL Server hostname is unique and less than 15 characters.
 ```
 kubectl get pods -n dag -owide
-NAME    READY   STATUS    RESTARTS   AGE   IP            NODE   NOMINATED NODE   READINESS GATES
-ag2-0   1/1     Running   0          13m   10.42.0.128   neaj   <none>           <none>
-ag2-1   1/1     Running   0          12m   10.42.0.129   neaj   <none>           <none>
-ag2-2   1/1     Running   0          12m   10.42.0.130   neaj   <none>           <none>
+NAME    READY   STATUS    RESTARTS   AGE     IP          NODE                      NOMINATED NODE   READINESS GATES
+ag2-0   1/1     Running   0          4m51s   10.42.0.5   neaj-remote-data-center   <none>           <none>
+ag2-1   1/1     Running   0          3m53s   10.42.0.7   neaj-remote-data-center   <none>           <none>
+ag2-2   1/1     Running   0          3m24s   10.42.0.9   neaj-remote-data-center   <none>           <none>
 ```
 
 Manually update the /etc/hosts file on each pod:
@@ -79,21 +83,26 @@ kubectl exec -it ag2-0 -n dag -- bash
 root@ag2-0:/# apt-get update -y
 root@ag2-0:/# apt-get install -y iputils-ping
 root@ag2-0:/# ping ag2-1.ag2
-PING ag2-1.ag2.dag.svc.cluster.local (10.42.0.129) 56(84) bytes of data.
-64 bytes from ag2-1.ag2.dag.svc.cluster.local (10.42.0.129): icmp_seq=1 ttl=64 time=0.036 ms
-64 bytes from ag2-1.ag2.dag.svc.cluster.local (10.42.0.129): icmp_seq=2 ttl=64 time=0.091 ms
+PING ag2-1.ag2.dag.svc.cluster.local (10.42.0.7) 56(84) bytes of data.
+64 bytes from ag2-1.ag2.dag.svc.cluster.local (10.42.0.7): icmp_seq=1 ttl=64 time=0.074 ms
+64 bytes from ag2-1.ag2.dag.svc.cluster.local (10.42.0.7): icmp_seq=2 ttl=64 time=0.071 ms
+64 bytes from ag2-1.ag2.dag.svc.cluster.local (10.42.0.7): icmp_seq=3 ttl=64 time=0.068 ms
 ^C
 --- ag2-1.ag2.dag.svc.cluster.local ping statistics ---
-2 packets transmitted, 2 received, 0% packet loss, time 1013ms
-rtt min/avg/max/mdev = 0.036/0.063/0.091/0.027 ms
+3 packets transmitted, 3 received, 0% packet loss, time 2037ms
+rtt min/avg/max/mdev = 0.068/0.071/0.074/0.002 ms
 root@ag2-0:/# ping ag2-2.ag2
-PING ag2-2.ag2.dag.svc.cluster.local (10.42.0.130) 56(84) bytes of data.
-64 bytes from ag2-2.ag2.dag.svc.cluster.local (10.42.0.130): icmp_seq=1 ttl=64 time=0.224 ms
-64 bytes from ag2-2.ag2.dag.svc.cluster.local (10.42.0.130): icmp_seq=2 ttl=64 time=0.069 ms
+PING ag2-2.ag2.dag.svc.cluster.local (10.42.0.9) 56(84) bytes of data.
+64 bytes from ag2-2.ag2.dag.svc.cluster.local (10.42.0.9): icmp_seq=1 ttl=64 time=0.095 ms
+64 bytes from ag2-2.ag2.dag.svc.cluster.local (10.42.0.9): icmp_seq=2 ttl=64 time=0.057 ms
+64 bytes from ag2-2.ag2.dag.svc.cluster.local (10.42.0.9): icmp_seq=3 ttl=64 time=0.070 ms
+64 bytes from ag2-2.ag2.dag.svc.cluster.local (10.42.0.9): icmp_seq=4 ttl=64 time=0.065 ms
+64 bytes from ag2-2.ag2.dag.svc.cluster.local (10.42.0.9): icmp_seq=5 ttl=64 time=0.063 ms
+64 bytes from ag2-2.ag2.dag.svc.cluster.local (10.42.0.9): icmp_seq=6 ttl=64 time=0.064 ms
 ^C
 --- ag2-2.ag2.dag.svc.cluster.local ping statistics ---
-2 packets transmitted, 2 received, 0% packet loss, time 1044ms
-rtt min/avg/max/mdev = 0.069/0.146/0.224/0.077 ms
+6 packets transmitted, 6 received, 0% packet loss, time 5137ms
+rtt min/avg/max/mdev = 0.057/0.069/0.095/0.012 ms
 root@ag2-0:/# 
 ```
 
@@ -134,7 +143,7 @@ Follow the steps in the guide to create a connection profile:
 
 ---
 
-##### Execute Queries Directly in the Pod
+### Execute Queries Directly in the Pod
 You can also execute SQL queries by logging into the pod and using the `sqlcmd` tool:
 
 ```bash
@@ -201,6 +210,59 @@ go
 ```
 
 
+
+
+
+
+### Copy the certificate and the private key from primary replica of the primary ag (ag1) to all replicas of secondary ag (ag2)
+```
+# Copy the private key and certificate from the primary replica (ag1-0) to the local system
+kubectl cp dag/ag1-0:/tmp/dbm_certificate.pvk ./dbm_certificate.pvk
+kubectl cp dag/ag1-0:/tmp/dbm_certificate.cer ./dbm_certificate.cer
+
+
+-- Copy the certificate and private key from the local system to the replicas of secodary ag (ag2:
+# Copy the certificate and private key to the replica ag2-0
+kubectl cp ./dbm_certificate.cer dag/ag2-0:/tmp/dbm_certificate.cer
+kubectl cp ./dbm_certificate.pvk dag/ag2-0:/tmp/dbm_certificate.pvk
+
+# Copy the certificate and private key to the replica ag2-1
+kubectl cp ./dbm_certificate.cer dag/ag2-1:/tmp/dbm_certificate.cer
+kubectl cp ./dbm_certificate.pvk dag/ag2-1:/tmp/dbm_certificate.pvk
+
+# Copy the certificate and private key to the replica ag2-2
+kubectl cp ./dbm_certificate.cer dag/ag2-2:/tmp/dbm_certificate.cer
+kubectl cp ./dbm_certificate.pvk dag/ag2-2:/tmp/dbm_certificate.pvk
+```
+
+
+```
+-- Set the group and ownership of the private key and the certificate to mssql:mssql.
+kubectl exec -it -n dag ag2-0 -- bash
+root@ag2-1:/# cd tmp 
+root@ag2-1:/tmp# ls
+dbm_certificate.cer  dbm_certificate.pvk
+root@ag2-1:/tmp# sudo chown mssql:mssql /tmp/dbm_certificate.*
+
+kubectl exec -it -n dag ag2-1 -- bash
+root@ag2-1:/# cd tmp 
+root@ag2-1:/tmp# ls
+dbm_certificate.cer  dbm_certificate.pvk
+root@ag2-1:/tmp# sudo chown mssql:mssql /tmp/dbm_certificate.*
+
+kubectl exec -it -n dag ag2-2 -- bash
+root@ag2-2:/# sudo chown mssql:mssql /tmp/dbm_certificate.*
+-- verify ownership 
+root@ag2-2:/tmp# ls -la
+drwxrwxrwt 1 root  root  4096 Jan 22 13:43 .
+drwxr-xr-x 1 root  root  4096 Jan 22 12:29 ..
+-rw-rw-r-- 1 mssql mssql  923 Jan 22 13:43 dbm_certificate.cer
+-rw-rw-r-- 1 mssql mssql 1788 Jan 22 13:43 dbm_certificate.pvk
+```
+
+
+
+
 *On the primary replica: ag2-0*
 ```
 $ kubectl exec -it -n dag ag2-0 -- bash
@@ -213,18 +275,14 @@ root@ag2-0:/#
 -- create a master key for private key encryption
 root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Pa55w0rd\!';"
 root@ag2-0:/# 
--- create the certificate
-root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "CREATE CERTIFICATE dbm_certificate WITH SUBJECT = 'dbm';"
-root@ag2-0:/# 
-
+-- Create the Certificate: Assuming you’ve already copied the certificate and private key files to /tmp/ on the pods:
 
 root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
-BACKUP CERTIFICATE dbm_certificate 
-TO FILE = '/tmp/dbm_certificate.cer' 
-WITH PRIVATE KEY (
-    FILE = '/tmp/dbm_certificate.pvk', 
-    ENCRYPTION BY PASSWORD = 'Pa55w0rd\!'
-);
+CREATE CERTIFICATE dbm_certificate
+   FROM FILE = '/tmp/dbm_certificate.cer'
+   WITH PRIVATE KEY (
+   FILE = '/tmp/dbm_certificate.pvk',
+   DECRYPTION BY PASSWORD = 'Pa55w0rd\!');
 "
 root@ag2-0:/# 
 root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
@@ -253,46 +311,6 @@ GRANT CONNECT ON ENDPOINT::[Hadr_endpoint] TO [dbm_login];
 ALTER EVENT SESSION AlwaysOn_health ON SERVER WITH (STARTUP_STATE = ON);
 "
 ```
-
-
-
-### Copy the certificate and the private key from primary replica to other replicas
-```
-# Copy the private key and certificate from the primary replica (ag2-0) to the local system
-kubectl cp dag/ag2-0:/tmp/dbm_certificate.pvk ./dbm_certificate.pvk
-kubectl cp dag/ag2-0:/tmp/dbm_certificate.cer ./dbm_certificate.cer
-
-
--- Copy the certificate and private key from the local system to the secondary replicas:
-# Copy the certificate and private key to the secondary replica ag2-1
-kubectl cp ./dbm_certificate.cer dag/ag2-1:/tmp/dbm_certificate.cer
-kubectl cp ./dbm_certificate.pvk dag/ag2-1:/tmp/dbm_certificate.pvk
-
-# Copy the certificate and private key to the secondary replica ag2-2
-kubectl cp ./dbm_certificate.cer dag/ag2-2:/tmp/dbm_certificate.cer
-kubectl cp ./dbm_certificate.pvk dag/ag2-2:/tmp/dbm_certificate.pvk
-```
-
-
-```
--- Set the group and ownership of the private key and the certificate to mssql:mssql.
-kubectl exec -it -n dag ag2-1 -- bash
-root@ag2-1:/# cd tmp 
-root@ag2-1:/tmp# ls
-dbm_certificate.cer  dbm_certificate.pvk
-root@ag2-1:/tmp# sudo chown mssql:mssql /tmp/dbm_certificate.*
-
-kubectl exec -it -n dag ag2-2 -- bash
-root@ag2-2:/# sudo chown mssql:mssql /tmp/dbm_certificate.*
--- verify ownership 
-root@ag2-2:/tmp# ls -la
-drwxrwxrwt 1 root  root  4096 Jan 22 13:43 .
-drwxr-xr-x 1 root  root  4096 Jan 22 12:29 ..
--rw-rw-r-- 1 mssql mssql  923 Jan 22 13:43 dbm_certificate.cer
--rw-rw-r-- 1 mssql mssql 1788 Jan 22 13:43 dbm_certificate.pvk
-```
-
-
 
 
 ## Configure Secondary Replicas with Certificates and Endpoint
@@ -396,7 +414,7 @@ ALTER AVAILABILITY GROUP [AG2] GRANT CREATE ANY DATABASE;
 kubectl exec -it -n dag ag2-1 -- bash 
 
 root@ag2-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
-ALTER AVAILABILITY GROUP [AG1] JOIN WITH (CLUSTER_TYPE = NONE);
+ALTER AVAILABILITY GROUP [AG2] JOIN WITH (CLUSTER_TYPE = NONE);
 "
 -- Grant the ability to create databases:
 root@ag2-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
