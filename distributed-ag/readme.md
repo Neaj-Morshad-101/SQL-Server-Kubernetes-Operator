@@ -26,7 +26,7 @@
 ### **Benefits**
 - Supports hybrid AG configurations (different versions/settings).  
 - Simplifies large-scale migrations with minimal downtime.  
-
+You can use this method for OS and SQL Version upgrades also.
 
 ## Configure Distributed Availability Group on Kubernetes
 
@@ -235,16 +235,28 @@ id          name                                               quantity
           2 orange                                                     154
           3 nana                                                       150
 
-(3 rows affected)
-1> 
-
-
-
 So the data is being replicated properly.
 
 
 
-Now. test failover in ag1:
+```bash
+# You can check distributed AG health with command;
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "SELECT ag.[name] AS [AG Name], ag.is_distributed, ar.replica_server_name AS [Underlying AG], ars.role_desc AS [Role], ars.synchronization_health_desc AS [Sync Status] FROM sys.availability_groups AS ag INNER JOIN sys.availability_replicas AS ar ON ag.group_id = ar.group_id INNER JOIN sys.dm_hadr_availability_replica_states AS ars ON ar.replica_id = ars.replica_id WHERE ag.is_distributed = 1
+"
+
+
+OR 
+SELECT ag.[name] AS [Distributed AG Name], ar.replica_server_name AS [Underlying AG], dbs.[name] AS [Database], ars.role_desc AS [Role], drs.synchronization_health_desc AS [Sync Status], drs.log_send_queue_size, drs.log_send_rate, drs.redo_queue_size, drs.redo_rate FROM sys.databases AS dbs INNER JOIN sys.dm_hadr_database_replica_states AS drs ON dbs.database_id = drs.database_id INNER JOIN sys.availability_groups AS ag ON drs.group_id = ag.group_id INNER JOIN sys.dm_hadr_availability_replica_states AS ars ON ars.replica_id = drs.replica_id INNER JOIN sys.availability_replicas AS ar ON ar.replica_id = ars.replica_id WHERE ag.is_distributed = 1
+
+
+OR 
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "SELECT ag.name AS group_name, ag.is_distributed, ar.replica_server_name AS replica_name, ar.availability_mode_desc, ar.failover_mode_desc, ar.primary_role_allow_connections_desc AS allow_connections_primary, ar.secondary_role_allow_connections_desc AS allow_connections_secondary, ar.seeding_mode_desc AS seeding_mode FROM sys.availability_replicas AS ar JOIN sys.availability_groups AS ag ON ar.group_id = ag.group_id"
+
+```
+
+
+
+## Now. test failover in ag1: (Having issue, the ag2 replicas including the forwarder is not getting synced with the new primary like after ag1-0 to ag1-1 failover)
 ➤ kubectl exec -it -n dag ag1-1 -- bash
 root@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No
 1> use [master]
@@ -335,9 +347,42 @@ ALTER DATABASE [agtestdb] SET HADR RESUME
 
 
 
-Failover to ag2:
+### To Fail-over from ag1 to ag2:
+
+Change the availability mode to sync commit. (if ag1 primary alive)
+Execute this command on Primary and Forwarder;
+`ALTER AVAILABILITY GROUP DAG MODIFY AVAILABILITY GROUP ON ‘AG!’ WITH ( AVAILABILITY_MODE = SYNCHRONOUS_COMMIT ),‘AG2’ WITH ( AVAILABILITY_MODE = SYNCHRONOUS_COMMIT);`
+
+Now our distributed AG in sync-commit mode.
+We should check last_hardened_lsn it has to be the same for all databases on and both AG state should be in “SYNCHRONIZED” status. Check by running this query on global primary and forwarder.
+`SELECT ag.name, drs.database_id, drs.group_id, drs.replica_id, drs.synchronization_state_desc, drs.end_of_log_lsn FROM sys.dm_hadr_database_replica_states drs, sys.availability_groups ag WHERE drs.group_id = ag.group_id`
 
 
 
+With this query, we will set the distributed AG role on the primary to SECONDARY, run the query on the primary.
+`ALTER AVAILABILITY GROUP [DAG] SET (ROLE = SECONDARY);`
+!! Now distributed AG went offline and client connections are terminated.
+
+With this query, failover the distributed AG to the secondary Availability Group. Run the query on the forwarder.
+`ALTER AVAILABILITY GROUP [DAG] FORCE_FAILOVER_ALLOW_DATA_LOSS;`
 
 
+
+After this, global primary is ag2-0, forwader is ag1-1. all replica is syncing with new global primary.
+insert new data on new global primary. 
+`INSERT INTO inventory VALUES (5, 'ag11Toag20', 150); `
+
+You should see all the replicas of ag1 and ag2 are synced with new data. see from all replicas of ag1 and ag2. 
+1> select * from inventory;
+2> go
+id          name                                               quantity   
+----------- -------------------------------------------------- -----------
+          1 banana                                                     150
+          2 orange                                                     154
+          3 nana                                                       150
+          4 firstfailover                                              150
+          5 ag11Toag20                                                 150
+
+
+
+##### Again Fail-over from ag2 to ag1: insert new data to ag1-1 (new global primary). all replicas are synced. So Distributed AG failover is working fine. 
