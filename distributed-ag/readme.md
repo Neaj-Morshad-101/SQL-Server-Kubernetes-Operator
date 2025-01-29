@@ -256,7 +256,10 @@ OR
 
 
 
-## Now. test failover in ag1: (Having issue, the ag2 replicas including the forwarder is not getting synced with the new primary like after ag1-0 to ag1-1 failover)
+## Now. test fail over in ag1: (Having issue, the ag2 replicas including the forwarder is not getting synced with the new primary like after ag1-0 to ag1-1 fail over)
+
+
+
 ➤ kubectl exec -it -n dag ag1-1 -- bash
 root@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No
 1> use [master]
@@ -385,4 +388,4 @@ id          name                                               quantity
 
 
 
-##### Again Fail-over from ag2 to ag1: insert new data to ag1-1 (new global primary). all replicas are synced. So Distributed AG failover is working fine. 
+##### Again Fail-over from ag2 to ag1 tested: inserted new data to ag1-1 (new global primary). all replicas are synced. So Distributed AG fail over is working fine. 
