@@ -338,7 +338,6 @@ ALTER DATABASE [agtestdb]
 ```
 
 
-
 ag2's replicas are not joining. 
 
 use [master]
@@ -347,6 +346,16 @@ ALTER AVAILABILITY GROUP [dag]  SET (ROLE = SECONDARY);
 use [master]
 ALTER DATABASE [agtestdb] SET HADR RESUME
 
+
+Additional Information on Fail over & Resume: 
+[Manual SQL Server Availability Group Failover](https://www.mssqltips.com/sqlservertip/3437/manual-sql-server-availability-group-failover/)
+
+https://www.mssqltips.com/sqlservertip/6988/sql-server-availability-group-maintenance-distributed-availability-groups/
+
+https://www.mssqltips.com/sqlservertip/5053/setup-and-implement-sql-server-2016-always-on-distributed-availability-groups/
+
+Not Sync Issue 
+https://dba.stackexchange.com/questions/305737/sql-server-distributed-availability-group-databases-not-syncing-after-a-global-p
 
 
 
