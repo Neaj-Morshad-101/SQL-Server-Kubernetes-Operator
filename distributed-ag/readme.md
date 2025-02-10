@@ -257,6 +257,9 @@ OR
 
 
 ## Now. test fail over in ag1: (Having issue, the ag2 replicas including the forwarder is not getting synced with the new primary like after ag1-0 to ag1-1 fail over)
+Error: A connection timeout has occurred while attempting to establish a connection to availability replica 'ag1' with id [6CD38135-9FFF-24A2-9401-E9833DBDC2D1]. Either a networking or firewall issue exists, or the endpoint address provided for the replica is not the database mirroring endpoint of the host server instance.
+
+Oooh! Got synced automatically after some time!!!!!!!!!!!!!!!!! (Maybe I failed back again to ag1-0 (the old first primary)). 
 
 
 
@@ -328,12 +331,10 @@ ALTER AVAILABILITY GROUP [ag1] OFFLINE
 -- Now we can change it's role by running the following command
 
 use [master]
-ALTER AVAILABILITY GROUP [ag1] 
-     SET (ROLE = SECONDARY); 
+ALTER AVAILABILITY GROUP [ag1] SET (ROLE = SECONDARY); 
 
 use [master]
-ALTER DATABASE [agtestdb]
-     SET HADR RESUME
+ALTER DATABASE [agtestdb] SET HADR RESUME
 
 ```
 
@@ -356,6 +357,38 @@ https://www.mssqltips.com/sqlservertip/5053/setup-and-implement-sql-server-2016-
 
 Not Sync Issue 
 https://dba.stackexchange.com/questions/305737/sql-server-distributed-availability-group-databases-not-syncing-after-a-global-p
+
+
+
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
+USE [master]
+GO
+ALTER AVAILABILITY GROUP [DAG]  
+MODIFY AVAILABILITY GROUP ON  
+ 'AG1' WITH    
+    (   
+        LISTENER_URL = 'tcp://10.2.0.149:5022'
+    )
+GO"
+
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
+USE [master]
+GO
+ALTER AVAILABILITY GROUP [DAG]  
+MODIFY AVAILABILITY GROUP ON  
+  'AG2' WITH    
+    (   
+        LISTENER_URL = 'tcp://10.2.0.188 :5022'
+    )
+GO"
+
+
+
+Need to explore more on the above links.
+
+
+
+
 
 
 
