@@ -134,7 +134,7 @@ Follow the steps in the guide to create a connection profile:
 
 ---
 
-##### Execute Queries Directly in the Pod
+### Execute Queries Directly in the Pod
 You can also execute SQL queries by logging into the pod and using the `sqlcmd` tool:
 
 ```bash
@@ -142,7 +142,7 @@ kubectl exec -it ag1-0 -n dag -- bash
 # /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P Pa55w0rd! -No
 ```
 
-### Example Query
+#### Example Query
 ```sql
 1> SELECT name FROM sys.databases;
 2> GO
@@ -638,3 +638,10 @@ ALTER AVAILABILITY GROUP [ag1] JOIN WITH (CLUSTER_TYPE = NONE);
 ALTER AVAILABILITY GROUP [ag1] GRANT CREATE ANY DATABASE;
 GO
 ```
+
+
+
+
+
+to sync a seondary ag replica to primary, run
+ALTER AVAILABILITY GROUP [ag2] SET (ROLE = SECONDARY);

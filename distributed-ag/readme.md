@@ -49,7 +49,7 @@ Create load balancer svc for second availability group (ag2) in the second clust
 ```bash
 kubectl get svc -n dag ag2-primary
 NAME          TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)                         AGE
-ag2-primary   LoadBalancer   10.43.173.130   10.2.0.188    1433:30752/TCP,5022:31052/TCP   4h24m
+ag2-primary   LoadBalancer   10.43.173.130   10.2.0.173    1433:30752/TCP,5022:31052/TCP   4h24m
 ```
 
 
@@ -72,7 +72,7 @@ kubectl label pod ag2-0 -n dag role=primary
 
 Now, create the DISTRIBUTED Availability Group named `DAG`.
 ag1-primary:  EXTERNAL-IP    10.2.0.149
-ag2-primary:  EXTERNAL-IP    10.2.0.188
+ag2-primary:  EXTERNAL-IP    10.2.0.173
 
 
 ```bash
@@ -91,7 +91,7 @@ CREATE AVAILABILITY GROUP [DAG]
       ),   
       'ag2' WITH    
       (   
-         LISTENER_URL = 'tcp://10.2.0.188 :5022',   
+         LISTENER_URL = 'tcp://10.2.0.173 :5022',   
          AVAILABILITY_MODE = ASYNCHRONOUS_COMMIT,   
          FAILOVER_MODE = MANUAL,   
          SEEDING_MODE = AUTOMATIC   
@@ -116,7 +116,7 @@ ALTER AVAILABILITY GROUP [DAG]
       ),   
       'ag2' WITH    
       (   
-         LISTENER_URL = 'tcp://10.2.0.188 :5022',   
+         LISTENER_URL = 'tcp://10.2.0.173 :5022',   
          AVAILABILITY_MODE = ASYNCHRONOUS_COMMIT,   
          FAILOVER_MODE = MANUAL,   
          SEEDING_MODE = AUTOMATIC   
@@ -124,53 +124,54 @@ ALTER AVAILABILITY GROUP [DAG]
 GO
 "
 
-root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No
-1> use agtestdb
-2> go
+root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+use agtestdb
+go
+select * from inventory;
+go
+exit
+"
 Changed database context to 'agtestdb'.
-1> select * from inventory;
-2> go
 id          name                                               quantity   
 ----------- -------------------------------------------------- -----------
           1 banana                                                     150
           2 orange                                                     154
 
 (2 rows affected)
-1> exit
-root@ag2-0:/# exit
-exit
 
-kubectl exec -it -n dag ag2-2 -- bash
-root@ag2-2:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No
-1> use agtestdb
-2> go
-Changed database context to 'agtestdb'.
-1> select * from inventory;
-2> go
-id          name                                               quantity   
------------ -------------------------------------------------- -----------
-          1 banana                                                     150
-          2 orange                                                     154
-
-(2 rows affected)
-1> exit
-root@ag2-2:/# exit
-exit
 
 kubectl exec -it -n dag ag2-1 -- bash
-root@ag2-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No
-1> use agtestdb;
-2> go
+root@ag2-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+use agtestdb
+go
+select * from inventory;
+go
+exit
+"
 Changed database context to 'agtestdb'.
-1> select * from inventory;
-2> go
 id          name                                               quantity   
 ----------- -------------------------------------------------- -----------
           1 banana                                                     150
           2 orange                                                     154
 
 (2 rows affected)
-1> 
+
+
+kubectl exec -it -n dag ag2-2 -- bash
+root@ag2-2:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+use agtestdb
+go
+select * from inventory;
+go
+exit
+"
+Changed database context to 'agtestdb'.
+id          name                                               quantity   
+----------- -------------------------------------------------- -----------
+          1 banana                                                     150
+          2 orange                                                     154
+
+(2 rows affected)
 ```
 
 We can see that, data has been replicated to all replicas of the ag2 successfully.
@@ -378,7 +379,7 @@ ALTER AVAILABILITY GROUP [DAG]
 MODIFY AVAILABILITY GROUP ON  
   'AG2' WITH    
     (   
-        LISTENER_URL = 'tcp://10.2.0.188 :5022'
+        LISTENER_URL = 'tcp://10.2.0.173 :5022'
     )
 GO"
 
