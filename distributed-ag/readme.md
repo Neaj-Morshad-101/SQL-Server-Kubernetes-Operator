@@ -124,6 +124,11 @@ ALTER AVAILABILITY GROUP [DAG]
 GO
 "
 
+If we have any databases in ag2: 
+Msg 19511, Level 16, State 1, Server ag2-1, Line 2
+Cannot join distributed availability group 'DAG'. The local availability group 'AG2' contains one or more databases. Remove all the databases or create an empty availability group to join a distributed availability group.
+
+
 root@ag2-0:/# 
 /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
 use agtestdb
