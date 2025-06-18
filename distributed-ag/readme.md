@@ -41,7 +41,7 @@ Create load balancer svc for the first availability group (ag1) in the first clu
 ```bash
 kubectl get svc -n dag ag1-primary
 NAME          TYPE           CLUSTER-IP     EXTERNAL-IP   PORT(S)                         AGE
-ag1-primary   LoadBalancer   10.43.238.68   10.2.0.83    1433:32400/TCP,5022:30466/TCP   4h25m
+ag1-primary   LoadBalancer   10.43.238.68   10.2.0.236    1433:32400/TCP,5022:30466/TCP   4h25m
 ```
 
 Create load balancer svc for a second availability group (ag2) in the second cluster.
@@ -49,7 +49,7 @@ Create load balancer svc for a second availability group (ag2) in the second clu
 ```bash
 kubectl get svc -n dag ag2-primary
 NAME          TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)                         AGE
-ag2-primary   LoadBalancer   10.43.173.130   10.2.0.64    1433:30752/TCP,5022:31052/TCP   4h24m
+ag2-primary   LoadBalancer   10.43.173.130   10.2.0.181   1433:30752/TCP,5022:31052/TCP   4h24m
 ```
 
 
@@ -71,27 +71,27 @@ kubectl label pod ag2-0 -n dag role=primary
 
 
 Now, create the DISTRIBUTED Availability Group named `DAG`.
-ag1-primary:  EXTERNAL-IP    10.2.0.83
+ag1-primary:  EXTERNAL-IP    10.2.0.236
 ag2-primary:  EXTERNAL-IP    10.2.0.64
 
 
 ```bash
 # Primary Cluster: Create DAG
 kubectl exec -it -n dag ag1-0 -- bash
-/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 CREATE AVAILABILITY GROUP [DAG]  
    WITH (DISTRIBUTED)   
    AVAILABILITY GROUP ON  
       'ag1' WITH    
       (   
-         LISTENER_URL = 'tcp://10.2.0.83:5022',    
+         LISTENER_URL = 'tcp://10.2.0.236:5022',    
          AVAILABILITY_MODE = ASYNCHRONOUS_COMMIT,   
          FAILOVER_MODE = MANUAL,   
          SEEDING_MODE = AUTOMATIC   
       ),   
       'ag2' WITH    
       (   
-         LISTENER_URL = 'tcp://10.2.0.64 :5022',   
+         LISTENER_URL = 'tcp://10.2.0.181:5022',   
          AVAILABILITY_MODE = ASYNCHRONOUS_COMMIT,   
          FAILOVER_MODE = MANUAL,   
          SEEDING_MODE = AUTOMATIC   
@@ -103,20 +103,20 @@ GO
 ```bash
 # Secondary Cluster: JOIN DAG
 kubectl exec -it -n dag ag2-0 -- bash
-/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 ALTER AVAILABILITY GROUP [DAG]
    JOIN   
    AVAILABILITY GROUP ON  
       'ag1' WITH    
       (   
-         LISTENER_URL = 'tcp://10.2.0.83:5022',    
+         LISTENER_URL = 'tcp://10.2.0.236:5022',    
          AVAILABILITY_MODE = ASYNCHRONOUS_COMMIT,   
          FAILOVER_MODE = MANUAL,   
          SEEDING_MODE = AUTOMATIC   
       ),   
       'ag2' WITH    
       (   
-         LISTENER_URL = 'tcp://10.2.0.64 :5022',   
+         LISTENER_URL = 'tcp://10.2.0.181:5022',   
          AVAILABILITY_MODE = ASYNCHRONOUS_COMMIT,   
          FAILOVER_MODE = MANUAL,   
          SEEDING_MODE = AUTOMATIC   
@@ -130,7 +130,7 @@ Cannot join distributed availability group 'DAG'. The local availability group '
 
 
 root@ag2-0:/# 
-/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 use agtestdb
 go
 select * from inventory;
@@ -147,7 +147,7 @@ id          name                                               quantity
 
 
 kubectl exec -it -n dag ag2-1 -- bash
-root@ag2-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag2-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 use agtestdb
 go
 select * from inventory;
@@ -164,7 +164,7 @@ id          name                                               quantity
 
 
 kubectl exec -it -n dag ag2-2 -- bash
-root@ag2-2:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag2-2:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 use agtestdb
 go
 select * from inventory;
@@ -190,7 +190,7 @@ We can see that, data has been replicated to all replicas of the ag2 successfull
 
 ```bash
 kubectl exec -it -n dag ag1-0 -- bash
-/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 SELECT is_local, role_desc, replica_id, group_id, synchronization_health_desc, connected_state_desc, operational_state_desc from sys.dm_hadr_availability_replica_states
 go 
 "
@@ -205,7 +205,7 @@ is_local role_desc                                                    synchroniz
 
 ```bash
 kubectl exec -it -n dag ag1-0 -- bash
-/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 use agtestdb;
 go
 INSERT INTO inventory VALUES (3, 'nana', 150);
@@ -217,7 +217,7 @@ go
 
 ```bash
 kubectl exec -it -n dag ag2-1 -- bash
-/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 use agtestdb;
 go
 select * from inventory;
@@ -232,7 +232,7 @@ id          name                                               quantity
 
 ```bash
 kubectl exec -it -n dag ag2-2 -- bash
-/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 use agtestdb;
 go
 select * from inventory;
@@ -251,13 +251,13 @@ So the data is being replicated properly.
 
 ```bash
 # You can check distributed AG health with command;
-/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "SELECT ag.[name] AS [AG Name], ag.is_distributed, ar.replica_server_name AS [Underlying AG], ars.role_desc AS [Role], ars.synchronization_health_desc AS [Sync Status] FROM sys.availability_groups AS ag INNER JOIN sys.availability_replicas AS ar ON ag.group_id = ar.group_id INNER JOIN sys.dm_hadr_availability_replica_states AS ars ON ar.replica_id = ars.replica_id WHERE ag.is_distributed = 1"
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "SELECT ag.[name] AS [AG Name], ag.is_distributed, ar.replica_server_name AS [Underlying AG], ars.role_desc AS [Role], ars.synchronization_health_desc AS [Sync Status] FROM sys.availability_groups AS ag INNER JOIN sys.availability_replicas AS ar ON ag.group_id = ar.group_id INNER JOIN sys.dm_hadr_availability_replica_states AS ars ON ar.replica_id = ars.replica_id WHERE ag.is_distributed = 1"
 
 OR 
-/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "SELECT ag.name AS group_name, ag.is_distributed, ar.replica_server_name AS replica_name, ar.availability_mode_desc, ar.failover_mode_desc, ar.primary_role_allow_connections_desc AS allow_connections_primary, ar.secondary_role_allow_connections_desc AS allow_connections_secondary, ar.seeding_mode_desc AS seeding_mode FROM sys.availability_replicas AS ar JOIN sys.availability_groups AS ag ON ar.group_id = ag.group_id"
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "SELECT ag.name AS group_name, ag.is_distributed, ar.replica_server_name AS replica_name, ar.availability_mode_desc, ar.failover_mode_desc, ar.primary_role_allow_connections_desc AS allow_connections_primary, ar.secondary_role_allow_connections_desc AS allow_connections_secondary, ar.seeding_mode_desc AS seeding_mode FROM sys.availability_replicas AS ar JOIN sys.availability_groups AS ag ON ar.group_id = ag.group_id"
 
 OR only in primary ag 
-/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "SELECT ag.[name] AS [Distributed AG Name], ar.replica_server_name AS [Underlying AG], dbs.[name] AS [Database], ars.role_desc AS [Role], drs.synchronization_health_desc AS [Sync Status], drs.log_send_queue_size, drs.log_send_rate, drs.redo_queue_size, drs.redo_rate FROM sys.databases AS dbs INNER JOIN sys.dm_hadr_database_replica_states AS drs ON dbs.database_id = drs.database_id INNER JOIN sys.availability_groups AS ag ON drs.group_id = ag.group_id INNER JOIN sys.dm_hadr_availability_replica_states AS ars ON ars.replica_id = drs.replica_id INNER JOIN sys.availability_replicas AS ar ON ar.replica_id = ars.replica_id WHERE ag.is_distributed = 1"
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "SELECT ag.[name] AS [Distributed AG Name], ar.replica_server_name AS [Underlying AG], dbs.[name] AS [Database], ars.role_desc AS [Role], drs.synchronization_health_desc AS [Sync Status], drs.log_send_queue_size, drs.log_send_rate, drs.redo_queue_size, drs.redo_rate FROM sys.databases AS dbs INNER JOIN sys.dm_hadr_database_replica_states AS drs ON dbs.database_id = drs.database_id INNER JOIN sys.availability_groups AS ag ON drs.group_id = ag.group_id INNER JOIN sys.dm_hadr_availability_replica_states AS ars ON ars.replica_id = drs.replica_id INNER JOIN sys.availability_replicas AS ar ON ar.replica_id = ars.replica_id WHERE ag.is_distributed = 1"
 ```
 
 
@@ -270,7 +270,7 @@ Oooh! Got synced automatically after some time!!!!!!!!!!!!!!!!! (Maybe I failed 
 ```bash
 kubectl exec -it -n dag ag1-1 -- bash
 root@ag1-1:/# 
-/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 use [master]
 go 
 ALTER AVAILABILITY GROUP ag1 FORCE_FAILOVER_ALLOW_DATA_LOSS; 
@@ -279,7 +279,7 @@ SELECT is_local, role_desc, replica_id, group_id, synchronization_health_desc, c
 go
 "
 
-/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 SELECT is_local, role_desc, replica_id, group_id, synchronization_health_desc, connected_state_desc, operational_state_desc from sys.dm_hadr_availability_replica_states
 go
 "
@@ -296,7 +296,7 @@ is_local role_desc                                                    replica_id
 
 
 root@ag2-0:/# 
-/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 SELECT is_local, role_desc, replica_id, group_id, synchronization_health_desc, connected_state_desc, operational_state_desc from sys.dm_hadr_availability_replica_states
 go
 " 
@@ -337,7 +337,7 @@ ag1-primary   10.42.0.28:5022,10.42.0.28:1433   6d22h
 Now. set the role to secondary, and resume on all the secondaries of (ag1 & ag2). then they will be healthy and will sync with the new global primary.     
 ```
 --  After failover, all secondary databases are suspended, we need to change the role and resume synchronization from the old primary replica. It needs to be done for the secondary replicas also.
-/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 use [master]
 go
 ALTER AVAILABILITY GROUP [ag1]  SET (ROLE = SECONDARY); 
@@ -346,7 +346,7 @@ ALTER DATABASE [agtestdb] SET HADR RESUME
 go
 "
 
-/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 use [master]
 go
 ALTER AVAILABILITY GROUP [ag2]  SET (ROLE = SECONDARY); 
@@ -384,7 +384,7 @@ ALTER DATABASE [agtestdb] SET HADR RESUME
 
 Now, the status is 
 root@ag1-1:/# 
-/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 SELECT is_local, role_desc, replica_id, group_id, synchronization_health_desc, connected_state_desc, operational_state_desc from sys.dm_hadr_availability_replica_states
 go
 "
@@ -397,7 +397,7 @@ is_local role_desc                                                    replica_id
        0 SECONDARY                                                    0EAC444F-1CF1-8D21-0178-B43D2842ACF5 6BC05A51-AA36-A196-09BD-481D7A0973C0 NOT_HEALTHY                                                  DISCONNECTED                                                 NULL                                                        
 
 
-root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 SELECT is_local, role_desc, replica_id, group_id, synchronization_health_desc, connected_state_desc, operational_state_desc from sys.dm_hadr_availability_replica_states
 go
 "
@@ -419,12 +419,12 @@ ag2 remains `DISCONNECTED & NOT_HEALTHY`.
 
 run these commands in ag2's primary: ag2-0 
 root@ag2-0:/# 
-/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 use [master]
 ALTER AVAILABILITY GROUP [dag] SET (ROLE = SECONDARY);
 go
 "
-/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 use [master]
 ALTER DATABASE [agtestdb] SET HADR RESUME
 go
@@ -439,7 +439,7 @@ go
 
 
 Let's insert new data after ag1's internal failover. 
-/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 use agtestdb;
 go
 INSERT INTO inventory VALUES (4, 'SecoundInternalAg1Failover2', 150); 
@@ -461,7 +461,7 @@ id          name                                               quantity
 
 
 See from all replica of ag1 & ag2: 
-/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 use agtestdb;
 select * from inventory;
 "
@@ -470,7 +470,7 @@ select * from inventory;
 #### The forwarder & ag2's replicas are not getting synced. 
 
 
-root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 SELECT is_local, role_desc, replica_id, group_id, synchronization_health_desc, connected_state_desc, operational_state_desc from sys.dm_hadr_availability_replica_states
 go
 "
@@ -482,14 +482,14 @@ is_local role_desc                                                    replica_id
        1 SECONDARY                                                    0EAC444F-1CF1-8D21-0178-B43D2842ACF5 6BC05A51-AA36-A196-09BD-481D7A0973C0 HEALTHY                                                      DISCONNECTED                                                 ONLINE                                                      
 
 (4 rows affected)
-root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No     
+root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No     
 1> use master;
 2> go
 Changed database context to 'master'.
 1> ALTER AVAILABILITY GROUP [dag] SET (ROLE = SECONDARY);
 2> go
 
-root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 SELECT is_local, role_desc, replica_id, group_id, synchronization_health_desc, connected_state_desc, operational_state_desc from sys.dm_hadr_availability_replica_states
 go
 "
@@ -503,7 +503,7 @@ is_local role_desc                                                    replica_id
 
 
 
-root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 use agtestdb;
 select * from inventory;
 "
@@ -515,7 +515,7 @@ id          name                                               quantity
           3 nana                                                       150
 
 (3 rows affected)
-/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 use [master]
 go
 ALTER AVAILABILITY GROUP [dag] SET (ROLE = SECONDARY);
@@ -526,7 +526,7 @@ go
 "
 
 Sqlcmd: Warning: The last operation was terminated because the user pressed CTRL+C.
-root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 SELECT is_local, role_desc, replica_id, group_id, synchronization_health_desc, connected_state_desc, operational_state_desc from sys.dm_hadr_availability_replica_states
 go                      
 "
@@ -538,7 +538,7 @@ go
        1 SECONDARY                                                    0EAC444F-1CF1-8D21-0178-B43D2842ACF5 6BC05A51-AA36-A196-09BD-481D7A0973C0 HEALTHY                                                      CONNECTED                                                    ONLINE                                                      
 
 (4 rows affected)
-root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 use agtestdb;
 select * from inventory;
 "
@@ -552,7 +552,7 @@ id          name                                               quantity
 
 (5 rows affected)
 
-oot@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+oot@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 SELECT is_local, role_desc, replica_id, group_id, synchronization_health_desc, connected_state_desc, operational_state_desc from sys.dm_hadr_availability_replica_states
 go                      
 "
@@ -622,7 +622,7 @@ ALTER AVAILABILITY GROUP [DAG]
 MODIFY AVAILABILITY GROUP ON  
  'AG1' WITH    
     (   
-        LISTENER_URL = 'tcp://10.2.0.83:5022'
+        LISTENER_URL = 'tcp://10.2.0.236:5022'
     )
 GO"
 
@@ -633,7 +633,7 @@ ALTER AVAILABILITY GROUP [DAG]
 MODIFY AVAILABILITY GROUP ON  
   'AG2' WITH    
     (   
-        LISTENER_URL = 'tcp://10.2.0.64 :5022'
+        LISTENER_URL = 'tcp://10.2.0.181:5022'
     )
 GO"
 
