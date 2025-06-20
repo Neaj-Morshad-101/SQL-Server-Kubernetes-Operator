@@ -150,7 +150,7 @@ kubectl exec -it ag1-0 -n dag -- bash
 
 We can pass a sql file to cli to execute like this:
 ```
-/opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P "Pa55w0rd!" -No -i create_AG.sql
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P $MSSQL_SA_PASSWORD -No -i create_AG.sql
 ```
 
 
@@ -205,29 +205,29 @@ go
 ```
 $ kubectl exec -it -n dag ag1-0 -- bash
 -- Create the instance-level login
-root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "CREATE LOGIN dbm_login WITH PASSWORD = 'Pa55w0rd\!';"
+root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "CREATE LOGIN dbm_login WITH PASSWORD = 'Pa55w0rd\!';"
 root@ag1-0:/# 
 -- Verify that the login was created:
-root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "SELECT name FROM sys.sql_logins WHERE name = 'dbm_login';"
+root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "SELECT name FROM sys.sql_logins WHERE name = 'dbm_login';"
 root@ag1-0:/# 
 -- create a master key for private key encryption
-root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Pa55w0rd\!';"
+root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Pa55w0rd\!';"
 root@ag1-0:/# 
 -- create the certificate
-root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "CREATE CERTIFICATE dbm_certificate WITH SUBJECT = 'dbm';"
+root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "CREATE CERTIFICATE dbm_certificate WITH SUBJECT = 'dbm';"
 root@ag1-0:/# 
 
 
-root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 BACKUP CERTIFICATE dbm_certificate 
-TO FILE = '/tmp/dbm_certificate.cer' 
+TO FILE = '/var/opt/mssql/dbm_certificate.cer' 
 WITH PRIVATE KEY (
-    FILE = '/tmp/dbm_certificate.pvk', 
+    FILE = '/var/opt/mssql/dbm_certificate.pvk', 
     ENCRYPTION BY PASSWORD = 'Pa55w0rd\!'
 );
 "
 root@ag1-0:/# 
-root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 -- Create endpoint
 CREATE ENDPOINT [Hadr_endpoint] 
    AS TCP (
@@ -244,12 +244,12 @@ CREATE ENDPOINT [Hadr_endpoint]
 ALTER ENDPOINT [Hadr_endpoint] STATE = STARTED;
 "
 
-root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 -- Grant login permission to connect to the endpoint
 GRANT CONNECT ON ENDPOINT::[Hadr_endpoint] TO [dbm_login];
 "
 -- Enable AlwaysOn_health Event Session:
-/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 ALTER EVENT SESSION AlwaysOn_health ON SERVER WITH (STARTUP_STATE = ON);
 "
 ```
@@ -259,18 +259,18 @@ ALTER EVENT SESSION AlwaysOn_health ON SERVER WITH (STARTUP_STATE = ON);
 ### Copy the certificate and the private key from primary replica to other replicas
 ```
 # Copy the private key and certificate from the primary replica (ag1-0) to the local system
-kubectl cp dag/ag1-0:/tmp/dbm_certificate.pvk ./dbm_certificate.pvk
-kubectl cp dag/ag1-0:/tmp/dbm_certificate.cer ./dbm_certificate.cer
+kubectl cp demo/ag1-0:/var/opt/mssql/dbm_certificate.pvk ./dbm_certificate.pvk
+kubectl cp demo/ag1-0:/var/opt/mssql/dbm_certificate.cer ./dbm_certificate.cer
 
 
 -- Copy the certificate and private key from the local system to the secondary replicas:
 # Copy the certificate and private key to the secondary replica ag1-1
-kubectl cp ./dbm_certificate.cer dag/ag1-1:/tmp/dbm_certificate.cer
-kubectl cp ./dbm_certificate.pvk dag/ag1-1:/tmp/dbm_certificate.pvk
+kubectl cp ./dbm_certificate.cer demo/ag1-1:/var/opt/mssql/dbm_certificate.cer
+kubectl cp ./dbm_certificate.pvk demo/ag1-1:/var/opt/mssql/dbm_certificate.pvk
 
 # Copy the certificate and private key to the secondary replica ag1-2
-kubectl cp ./dbm_certificate.cer dag/ag1-2:/tmp/dbm_certificate.cer
-kubectl cp ./dbm_certificate.pvk dag/ag1-2:/tmp/dbm_certificate.pvk
+kubectl cp ./dbm_certificate.cer demo/ag1-2:/var/opt/mssql/dbm_certificate.cer
+kubectl cp ./dbm_certificate.pvk demo/ag1-2:/var/opt/mssql/dbm_certificate.pvk
 ```
 
 
@@ -280,10 +280,10 @@ kubectl exec -it -n dag ag1-1 -- bash
 root@ag1-1:/# cd tmp 
 root@ag1-1:/tmp# ls
 dbm_certificate.cer  dbm_certificate.pvk
-root@ag1-1:/tmp# sudo chown mssql:mssql /tmp/dbm_certificate.*
+root@ag1-1:/tmp# sudo chown mssql:mssql /var/opt/mssql/dbm_certificate.*
 
 kubectl exec -it -n dag ag1-2 -- bash
-root@ag1-2:/# sudo chown mssql:mssql /tmp/dbm_certificate.*
+root@ag1-2:/# sudo chown mssql:mssql /var/opt/mssql/dbm_certificate.*
 -- verify ownership 
 root@ag1-2:/tmp# ls -la
 drwxrwxrwt 1 root  root  4096 Jan 22 13:43 .
@@ -301,22 +301,22 @@ Create the certificate and endpoint On each secondary replica (ag1-1, ag1-2), fo
 ```
 $ kubectl exec -it -n dag ag1-1 -- bash
 -- Create the dbm_login
-root@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "CREATE LOGIN dbm_login WITH PASSWORD = 'Pa55w0rd\!';"
+root@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "CREATE LOGIN dbm_login WITH PASSWORD = 'Pa55w0rd\!';"
 
 -- Create the Master Key:
-root@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Pa55w0rd\!';"
+root@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Pa55w0rd\!';"
 -- Create the Certificate: Assuming you’ve already copied the certificate and private key files to /tmp/ on the pods:
 
-root@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 CREATE CERTIFICATE dbm_certificate
-   FROM FILE = '/tmp/dbm_certificate.cer'
+   FROM FILE = '/var/opt/mssql/dbm_certificate.cer'
    WITH PRIVATE KEY (
-   FILE = '/tmp/dbm_certificate.pvk',
+   FILE = '/var/opt/mssql/dbm_certificate.pvk',
    DECRYPTION BY PASSWORD = 'Pa55w0rd\!');
 "
 --- Create the Endpoint:
 
-root@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 CREATE ENDPOINT [Hadr_endpoint]
    AS TCP (LISTENER_IP = (0.0.0.0), LISTENER_PORT = 5022)
    FOR DATA_MIRRORING (
@@ -327,12 +327,12 @@ CREATE ENDPOINT [Hadr_endpoint]
 ALTER ENDPOINT [Hadr_endpoint] STATE = STARTED;
 "
 -- Grant Login Permissions to Connect to the Endpoint:
-root@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 GRANT CONNECT ON ENDPOINT::[Hadr_endpoint] TO [dbm_login];
 "
 
 -- Enable AlwaysOn_health Event Session:
-root@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 ALTER EVENT SESSION AlwaysOn_health ON SERVER WITH (STARTUP_STATE = ON);
 "
 ```
@@ -353,7 +353,7 @@ The following Transact-SQL script creates an AG named ag1.
 
 ```
 kubectl exec -it -n dag ag1-0 -- bash
-root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 CREATE AVAILABILITY GROUP [AG1]
 WITH (CLUSTER_TYPE = NONE)
 FOR REPLICA ON
@@ -385,7 +385,7 @@ FOR REPLICA ON
 
 
 -- Grant the ability to create databases in the Availability Group:
-root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 ALTER AVAILABILITY GROUP [AG1] GRANT CREATE ANY DATABASE;
 "
 ```
@@ -395,11 +395,11 @@ ALTER AVAILABILITY GROUP [AG1] GRANT CREATE ANY DATABASE;
 ```
 kubectl exec -it -n dag ag1-1 -- bash 
 
-root@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 ALTER AVAILABILITY GROUP [AG1] JOIN WITH (CLUSTER_TYPE = NONE);
 "
 -- Grant the ability to create databases:
-root@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 ALTER AVAILABILITY GROUP [AG1] GRANT CREATE ANY DATABASE;
 "
 ```
@@ -407,11 +407,11 @@ ALTER AVAILABILITY GROUP [AG1] GRANT CREATE ANY DATABASE;
 ```
 kubectl exec -it -n dag ag1-2 -- bash 
 
-root@ag1-2:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag1-2:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 ALTER AVAILABILITY GROUP [AG1] JOIN WITH (CLUSTER_TYPE = NONE);
 "
 -- Grant the ability to create databases:
-root@ag1-2:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag1-2:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 ALTER AVAILABILITY GROUP [AG1] GRANT CREATE ANY DATABASE;
 "
 ```

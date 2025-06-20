@@ -79,7 +79,7 @@ ag2-primary:  EXTERNAL-IP    10.2.0.64
 # Primary Cluster: Create DAG
 kubectl exec -it -n dag ag1-0 -- bash
 /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
-CREATE AVAILABILITY GROUP [DAG]  
+CREATE AVAILABILITY GROUP [dag]
    WITH (DISTRIBUTED)   
    AVAILABILITY GROUP ON  
       'ag1' WITH    
@@ -99,6 +99,24 @@ CREATE AVAILABILITY GROUP [DAG]
 GO 
 "
 ```
+
+
+
+mssql@ag1-0:/$ /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
+SELECT is_local, role_desc, replica_id, group_id, synchronization_health_desc, connected_state_desc, operational_state_desc from sys.dm_hadr_availability_replica_states
+go 
+"
+is_local role_desc                                                    replica_id                           group_id                             synchronization_health_desc                                  connected_state_desc                                         operational_state_desc                                      
+-------- ------------------------------------------------------------ ------------------------------------ ------------------------------------ ------------------------------------------------------------ ------------------------------------------------------------ ------------------------------------------------------------
+       1 PRIMARY                                                      A9FDD643-DB30-48FC-88B3-18163A7424BF BE9BE8C9-6E17-1132-BFBA-8B7D2C28AFDB HEALTHY                                                      CONNECTED                                                    ONLINE                                                      
+       0 SECONDARY                                                    5EBB46B9-92C7-4A2B-9E16-322D9AB7165E BE9BE8C9-6E17-1132-BFBA-8B7D2C28AFDB HEALTHY                                                      CONNECTED                                                    NULL                                                        
+       0 SECONDARY                                                    C60127CB-441D-4624-A8DE-1103477FDC8C BE9BE8C9-6E17-1132-BFBA-8B7D2C28AFDB HEALTHY                                                      CONNECTED                                                    NULL                                                        
+       1 PRIMARY                                                      6CD38135-9FFF-24A2-9401-E9833DBDC2D1 6BC05A51-AA36-A196-09BD-481D7A0973C0 HEALTHY                                                      CONNECTED                                                    ONLINE                                                      
+       0 SECONDARY                                                    0EAC444F-1CF1-8D21-0178-B43D2842ACF5 6BC05A51-AA36-A196-09BD-481D7A0973C0 NOT_HEALTHY                                                  DISCONNECTED                                                 NULL                                                        
+
+(5 rows affected)
+
+
 
 ```bash
 # Secondary Cluster: JOIN DAG
@@ -131,7 +149,7 @@ Cannot join distributed availability group 'DAG'. The local availability group '
 
 root@ag2-0:/# 
 /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
-use agtestdb
+use agdb1
 go
 select * from inventory;
 go
@@ -233,7 +251,7 @@ id          name                                               quantity
 ```bash
 kubectl exec -it -n dag ag2-2 -- bash
 /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
-use agtestdb;
+use agdb1;
 go
 select * from inventory;
 go
@@ -426,7 +444,8 @@ go
 "
 /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 use [master]
-ALTER DATABASE [agtestdb] SET HADR RESUME
+ALTER DATABASE [agdb1] SET HADR RESUME
+ALTER DATABASE [agdb2] SET HADR RESUME
 go
 "
 
@@ -482,12 +501,12 @@ is_local role_desc                                                    replica_id
        1 SECONDARY                                                    0EAC444F-1CF1-8D21-0178-B43D2842ACF5 6BC05A51-AA36-A196-09BD-481D7A0973C0 HEALTHY                                                      DISCONNECTED                                                 ONLINE                                                      
 
 (4 rows affected)
-root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No     
-1> use master;
-2> go
-Changed database context to 'master'.
-1> ALTER AVAILABILITY GROUP [dag] SET (ROLE = SECONDARY);
-2> go
+root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
+use master;
+go
+ALTER AVAILABILITY GROUP [dag] SET (ROLE = SECONDARY);
+go
+"
 
 root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 SELECT is_local, role_desc, replica_id, group_id, synchronization_health_desc, connected_state_desc, operational_state_desc from sys.dm_hadr_availability_replica_states
