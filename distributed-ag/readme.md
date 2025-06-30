@@ -60,19 +60,19 @@ Mine is `ag1-0` for ag1, and `ag2-0` for ag2.
 
 
 
-Add lable `role=primary` in ag1-0, ag2-0 (primary pods of each AG).
+Add lable `kubedb.com/role=primary` in ag1-0, ag2-0 (primary pods of each AG).
 ```
 first cluster:
-kubectl label pod ag1-0 -n dag role=primary
+kubectl label pod ag1-0 -n demo kubedb.com/role=primary
 second cluster:
-kubectl label pod ag2-0 -n dag role=primary
+kubectl label pod ag2-0 -n demo kubedb.com/role=primary
 ```
 
 
 
 Now, create the DISTRIBUTED Availability Group named `DAG`.
 ag1-primary:  EXTERNAL-IP    10.2.0.236
-ag2-primary:  EXTERNAL-IP    10.2.0.64
+ag2-primary:  EXTERNAL-IP    10.2.0.181
 
 
 ```bash
@@ -102,7 +102,10 @@ GO
 
 
 
-mssql@ag1-0:/$ /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
+
+
+mssql@ag1-0:/$ 
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 SELECT is_local, role_desc, replica_id, group_id, synchronization_health_desc, connected_state_desc, operational_state_desc from sys.dm_hadr_availability_replica_states
 go 
 "
@@ -121,35 +124,38 @@ is_local role_desc                                                    replica_id
 ```bash
 # Secondary Cluster: JOIN DAG
 kubectl exec -it -n dag ag2-0 -- bash
-/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
-ALTER AVAILABILITY GROUP [DAG]
-   JOIN   
-   AVAILABILITY GROUP ON  
-      'ag1' WITH    
-      (   
-         LISTENER_URL = 'tcp://10.2.0.236:5022',    
-         AVAILABILITY_MODE = ASYNCHRONOUS_COMMIT,   
-         FAILOVER_MODE = MANUAL,   
-         SEEDING_MODE = AUTOMATIC   
-      ),   
-      'ag2' WITH    
-      (   
-         LISTENER_URL = 'tcp://10.2.0.181:5022',   
-         AVAILABILITY_MODE = ASYNCHRONOUS_COMMIT,   
-         FAILOVER_MODE = MANUAL,   
-         SEEDING_MODE = AUTOMATIC   
-      );  
-GO
-"
+       /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
+       ALTER AVAILABILITY GROUP [DAG]
+       JOIN   
+       AVAILABILITY GROUP ON  
+       'ag1' WITH    
+       (   
+              LISTENER_URL = 'tcp://10.2.0.236:5022',    
+              AVAILABILITY_MODE = ASYNCHRONOUS_COMMIT,   
+              FAILOVER_MODE = MANUAL,   
+              SEEDING_MODE = AUTOMATIC   
+       ),   
+       'ag2' WITH    
+       (   
+              LISTENER_URL = 'tcp://10.2.0.181:5022',   
+              AVAILABILITY_MODE = ASYNCHRONOUS_COMMIT,   
+              FAILOVER_MODE = MANUAL,   
+              SEEDING_MODE = AUTOMATIC   
+       );  
+       GO
+       "
 
 If we have any databases in ag2: 
 Msg 19511, Level 16, State 1, Server ag2-1, Line 2
 Cannot join distributed availability group 'DAG'. The local availability group 'AG2' contains one or more databases. Remove all the databases or create an empty availability group to join a distributed availability group.
 
+if endpont certs mismatched: 
+2025-06-30 15:42:32.38 Logon       Database Mirroring login attempt failed with error: 'Connection handshake failed. The certificate used by the peer is invalid due to the following reason: Certificate not found. State 89.'.  [SERVER: 10.2.0.236]
+
 
 root@ag2-0:/# 
 /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
-use agdb1
+use agdb
 go
 select * from inventory;
 go
@@ -224,7 +230,7 @@ is_local role_desc                                                    synchroniz
 ```bash
 kubectl exec -it -n dag ag1-0 -- bash
 /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
-use agtestdb;
+use agdb;
 go
 INSERT INTO inventory VALUES (3, 'nana', 150);
 go
@@ -282,7 +288,6 @@ OR only in primary ag
 
 ## Now, test failover in ag1: (Having issue, the ag2 replicas including the forwarder is not getting synced with the new primary like after ag1-0 to ag1-1 fail over)
 Error: A connection timeout has occurred while attempting to establish a connection to availability replica 'ag1' with id [6CD38135-9FFF-24A2-9401-E9833DBDC2D1]. Either a networking or firewall issue exists, or the endpoint address provided for the replica is not the database mirroring endpoint of the host server instance.
-Oooh! Got synced automatically after some time!!!!!!!!!!!!!!!!! (Maybe I failed back again to ag1-0 (the old first primary)). 
 
 
 ```bash
@@ -452,7 +457,7 @@ go
 
 
 
-
+INSERT INTO inventory VALUES (4, 'RetryDAG', 150); 
 
 
 

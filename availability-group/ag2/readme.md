@@ -71,7 +71,7 @@ kubectl exec -it -n dag ag2-0 -- sh
 
 Example /etc/hosts configuration:
 ```
-10.42.0.128     ag2-0.ag2.dag.svc.cluster.local ag2-0
+10.42.0.128     ag2-0.ag2-pods.dag.svc.cluster.local ag2-0
 10.42.0.129     ag2-1
 10.42.0.130     ag2-2
 ```
@@ -82,25 +82,25 @@ Install ping tools and test connectivity between pods
 kubectl exec -it ag2-0 -n dag -- bash
 root@ag2-0:/# apt-get update -y
 root@ag2-0:/# apt-get install -y iputils-ping
-root@ag2-0:/# ping ag2-1.ag2
-PING ag2-1.ag2.dag.svc.cluster.local (10.42.0.7) 56(84) bytes of data.
-64 bytes from ag2-1.ag2.dag.svc.cluster.local (10.42.0.7): icmp_seq=1 ttl=64 time=0.074 ms
-64 bytes from ag2-1.ag2.dag.svc.cluster.local (10.42.0.7): icmp_seq=2 ttl=64 time=0.071 ms
-64 bytes from ag2-1.ag2.dag.svc.cluster.local (10.42.0.7): icmp_seq=3 ttl=64 time=0.068 ms
+root@ag2-0:/# ping ag2-1.ag2-pods
+PING ag2-1.ag2-pods.dag.svc.cluster.local (10.42.0.7) 56(84) bytes of data.
+64 bytes from ag2-1.ag2-pods.dag.svc.cluster.local (10.42.0.7): icmp_seq=1 ttl=64 time=0.074 ms
+64 bytes from ag2-1.ag2-pods.dag.svc.cluster.local (10.42.0.7): icmp_seq=2 ttl=64 time=0.071 ms
+64 bytes from ag2-1.ag2-pods.dag.svc.cluster.local (10.42.0.7): icmp_seq=3 ttl=64 time=0.068 ms
 ^C
---- ag2-1.ag2.dag.svc.cluster.local ping statistics ---
+--- ag2-1.ag2-pods.dag.svc.cluster.local ping statistics ---
 3 packets transmitted, 3 received, 0% packet loss, time 2037ms
 rtt min/avg/max/mdev = 0.068/0.071/0.074/0.002 ms
-root@ag2-0:/# ping ag2-2.ag2
-PING ag2-2.ag2.dag.svc.cluster.local (10.42.0.9) 56(84) bytes of data.
-64 bytes from ag2-2.ag2.dag.svc.cluster.local (10.42.0.9): icmp_seq=1 ttl=64 time=0.095 ms
-64 bytes from ag2-2.ag2.dag.svc.cluster.local (10.42.0.9): icmp_seq=2 ttl=64 time=0.057 ms
-64 bytes from ag2-2.ag2.dag.svc.cluster.local (10.42.0.9): icmp_seq=3 ttl=64 time=0.070 ms
-64 bytes from ag2-2.ag2.dag.svc.cluster.local (10.42.0.9): icmp_seq=4 ttl=64 time=0.065 ms
-64 bytes from ag2-2.ag2.dag.svc.cluster.local (10.42.0.9): icmp_seq=5 ttl=64 time=0.063 ms
-64 bytes from ag2-2.ag2.dag.svc.cluster.local (10.42.0.9): icmp_seq=6 ttl=64 time=0.064 ms
+root@ag2-0:/# ping ag2-2.ag2-pods
+PING ag2-2.ag2-pods.dag.svc.cluster.local (10.42.0.9) 56(84) bytes of data.
+64 bytes from ag2-2.ag2-pods.dag.svc.cluster.local (10.42.0.9): icmp_seq=1 ttl=64 time=0.095 ms
+64 bytes from ag2-2.ag2-pods.dag.svc.cluster.local (10.42.0.9): icmp_seq=2 ttl=64 time=0.057 ms
+64 bytes from ag2-2.ag2-pods.dag.svc.cluster.local (10.42.0.9): icmp_seq=3 ttl=64 time=0.070 ms
+64 bytes from ag2-2.ag2-pods.dag.svc.cluster.local (10.42.0.9): icmp_seq=4 ttl=64 time=0.065 ms
+64 bytes from ag2-2.ag2-pods.dag.svc.cluster.local (10.42.0.9): icmp_seq=5 ttl=64 time=0.063 ms
+64 bytes from ag2-2.ag2-pods.dag.svc.cluster.local (10.42.0.9): icmp_seq=6 ttl=64 time=0.064 ms
 ^C
---- ag2-2.ag2.dag.svc.cluster.local ping statistics ---
+--- ag2-2.ag2-pods.dag.svc.cluster.local ping statistics ---
 6 packets transmitted, 6 received, 0% packet loss, time 5137ms
 rtt min/avg/max/mdev = 0.057/0.069/0.095/0.012 ms
 root@ag2-0:/# 
@@ -159,7 +159,7 @@ kubectl exec -it ag2-0 -n dag -- bash
 
 We can pass a sql file to cli to execute like this:
 ```
-/opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P "Pa55w0rd!" -No -i create_AG.sql
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P "Pa55w0rd" -No -i create_AG.sql
 ```
 
 
@@ -195,7 +195,7 @@ go
 
 --- 1. backup password if you want 
 BACKUP CERTIFICATE dbm
-TO FILE = '/tmp/CERTIFICATE3.pfx'
+TO FILE = '/var/opt/mssql/CERTIFICATE3.pfx'
 With format = 'PFX', PRivate key (
     Encryption by password = 'ENCRYPTION_PASSWORD',
     ALGORITHM = 'AES_256'
@@ -204,7 +204,7 @@ go
 
 --- 2. you can create certificate again from that backup certificate
 drop certificate dbm;
-create certificate dbm from file = '/tmp/CERTIFICATE.pfx' with format = 'PFX', 
+create certificate dbm from file = '/var/opt/mssql/CERTIFICATE.pfx' with format = 'PFX', 
 private key ( Decryption by password = 'ENCRYPTION_PASSWORD');
 go
 ```
@@ -217,22 +217,22 @@ go
 ### Copy the certificate and the private key from primary replica of the primary ag (ag1) to all replicas of secondary ag (ag2)
 ```
 # Copy the private key and certificate from the primary replica (ag1-0) to the local system
-kubectl cp dag/ag1-0:/tmp/dbm_certificate.pvk ./dbm_certificate.pvk
-kubectl cp dag/ag1-0:/tmp/dbm_certificate.cer ./dbm_certificate.cer
+kubectl cp dag/ag1-0:/var/opt/mssql/dbm_certificate.pvk ./dbm_certificate.pvk
+kubectl cp dag/ag1-0:/var/opt/mssql/dbm_certificate.cer ./dbm_certificate.cer
 
 
 -- Copy the certificate and private key from the local system to the replicas of secodary ag (ag2:
 # Copy the certificate and private key to the replica ag2-0
-kubectl cp ./dbm_certificate.cer dag/ag2-0:/tmp/dbm_certificate.cer
-kubectl cp ./dbm_certificate.pvk dag/ag2-0:/tmp/dbm_certificate.pvk
+kubectl cp ./dbm_certificate.cer dag/ag2-0:/var/opt/mssql/dbm_certificate.cer
+kubectl cp ./dbm_certificate.pvk dag/ag2-0:/var/opt/mssql/dbm_certificate.pvk
 
 # Copy the certificate and private key to the replica ag2-1
-kubectl cp ./dbm_certificate.cer dag/ag2-1:/tmp/dbm_certificate.cer
-kubectl cp ./dbm_certificate.pvk dag/ag2-1:/tmp/dbm_certificate.pvk
+kubectl cp ./dbm_certificate.cer dag/ag2-1:/var/opt/mssql/dbm_certificate.cer
+kubectl cp ./dbm_certificate.pvk dag/ag2-1:/var/opt/mssql/dbm_certificate.pvk
 
 # Copy the certificate and private key to the replica ag2-2
-kubectl cp ./dbm_certificate.cer dag/ag2-2:/tmp/dbm_certificate.cer
-kubectl cp ./dbm_certificate.pvk dag/ag2-2:/tmp/dbm_certificate.pvk
+kubectl cp ./dbm_certificate.cer dag/ag2-2:/var/opt/mssql/dbm_certificate.cer
+kubectl cp ./dbm_certificate.pvk dag/ag2-2:/var/opt/mssql/dbm_certificate.pvk
 ```
 
 
@@ -240,20 +240,20 @@ kubectl cp ./dbm_certificate.pvk dag/ag2-2:/tmp/dbm_certificate.pvk
 -- Set the group and ownership of the private key and the certificate to mssql:mssql.
 kubectl exec -it -n dag ag2-0 -- bash
 root@ag2-1:/# cd tmp 
-root@ag2-1:/tmp# ls
+root@ag2-1:/var/opt/mssql# ls
 dbm_certificate.cer  dbm_certificate.pvk
-root@ag2-1:/tmp# sudo chown mssql:mssql /tmp/dbm_certificate.*
+root@ag2-1:/var/opt/mssql# sudo chown mssql:mssql /var/opt/mssql/dbm_certificate.*
 
 kubectl exec -it -n dag ag2-1 -- bash
 root@ag2-1:/# cd tmp 
-root@ag2-1:/tmp# ls
+root@ag2-1:/var/opt/mssql# ls
 dbm_certificate.cer  dbm_certificate.pvk
-root@ag2-1:/tmp# sudo chown mssql:mssql /tmp/dbm_certificate.*
+root@ag2-1:/var/opt/mssql# sudo chown mssql:mssql /var/opt/mssql/dbm_certificate.*
 
 kubectl exec -it -n dag ag2-2 -- bash
-root@ag2-2:/# sudo chown mssql:mssql /tmp/dbm_certificate.*
+root@ag2-2:/# sudo chown mssql:mssql /var/opt/mssql/dbm_certificate.*
 -- verify ownership 
-root@ag2-2:/tmp# ls -la
+root@ag2-2:/var/opt/mssql# ls -la
 drwxrwxrwt 1 root  root  4096 Jan 22 13:43 .
 drwxr-xr-x 1 root  root  4096 Jan 22 12:29 ..
 -rw-rw-r-- 1 mssql mssql  923 Jan 22 13:43 dbm_certificate.cer
@@ -267,25 +267,26 @@ drwxr-xr-x 1 root  root  4096 Jan 22 12:29 ..
 ```
 $ kubectl exec -it -n dag ag2-0 -- bash
 -- Create the instance-level login
-root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "CREATE LOGIN dbm_login WITH PASSWORD = 'Pa55w0rd\!';"
 root@ag2-0:/# 
--- Verify that the login was created:
-root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "SELECT name FROM sys.sql_logins WHERE name = 'dbm_login';"
-root@ag2-0:/# 
--- create a master key for private key encryption
-root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Pa55w0rd\!';"
-root@ag2-0:/# 
--- Create the Certificate: Assuming you’ve already copied the certificate and private key files to /tmp/ on the pods:
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd" -No -Q "CREATE LOGIN dbm_login WITH PASSWORD = 'Pa55w0rd';"
 
-root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+-- Verify that the login was created:
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd" -No -Q "SELECT name FROM sys.sql_logins WHERE name = 'dbm_login';"
+
+-- create a master key for private key encryption
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd" -No -Q "CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Pa55w0rd';"
+
+
+-- Create the Certificate: Assuming you’ve already copied the certificate and private key files to /var/opt/mssql/ on the pods:
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd" -No -Q "
 CREATE CERTIFICATE dbm_certificate
-   FROM FILE = '/tmp/dbm_certificate.cer'
+   FROM FILE = '/var/opt/mssql/dbm_certificate.cer'
    WITH PRIVATE KEY (
-   FILE = '/tmp/dbm_certificate.pvk',
-   DECRYPTION BY PASSWORD = 'Pa55w0rd\!');
+   FILE = '/var/opt/mssql/dbm_certificate.pvk',
+   DECRYPTION BY PASSWORD = 'Pa55w0rd');
 "
-root@ag2-0:/# 
-root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd" -No -Q "
 -- Create endpoint
 CREATE ENDPOINT [Hadr_endpoint] 
    AS TCP (
@@ -302,12 +303,14 @@ CREATE ENDPOINT [Hadr_endpoint]
 ALTER ENDPOINT [Hadr_endpoint] STATE = STARTED;
 "
 
-root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd" -No -Q "
 -- Grant login permission to connect to the endpoint
 GRANT CONNECT ON ENDPOINT::[Hadr_endpoint] TO [dbm_login];
 "
+
+
 -- Enable AlwaysOn_health Event Session:
-/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd" -No -Q "
 ALTER EVENT SESSION AlwaysOn_health ON SERVER WITH (STARTUP_STATE = ON);
 "
 ```
@@ -319,22 +322,22 @@ Create the certificate and endpoint On each secondary replica (ag2-1, ag2-2), fo
 ```
 $ kubectl exec -it -n dag ag2-1 -- bash
 -- Create the dbm_login
-root@ag2-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "CREATE LOGIN dbm_login WITH PASSWORD = 'Pa55w0rd\!';"
+root@ag2-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd" -No -Q "CREATE LOGIN dbm_login WITH PASSWORD = 'Pa55w0rd';"
 
 -- Create the Master Key:
-root@ag2-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Pa55w0rd\!';"
--- Create the Certificate: Assuming you’ve already copied the certificate and private key files to /tmp/ on the pods:
+root@ag2-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd" -No -Q "CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Pa55w0rd';"
+-- Create the Certificate: Assuming you’ve already copied the certificate and private key files to /var/opt/mssql/ on the pods:
 
-root@ag2-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag2-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd" -No -Q "
 CREATE CERTIFICATE dbm_certificate
-   FROM FILE = '/tmp/dbm_certificate.cer'
+   FROM FILE = '/var/opt/mssql/dbm_certificate.cer'
    WITH PRIVATE KEY (
-   FILE = '/tmp/dbm_certificate.pvk',
-   DECRYPTION BY PASSWORD = 'Pa55w0rd\!');
+   FILE = '/var/opt/mssql/dbm_certificate.pvk',
+   DECRYPTION BY PASSWORD = 'Pa55w0rd');
 "
 --- Create the Endpoint:
 
-root@ag2-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag2-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd" -No -Q "
 CREATE ENDPOINT [Hadr_endpoint]
    AS TCP (LISTENER_IP = (0.0.0.0), LISTENER_PORT = 5022)
    FOR DATA_MIRRORING (
@@ -345,12 +348,12 @@ CREATE ENDPOINT [Hadr_endpoint]
 ALTER ENDPOINT [Hadr_endpoint] STATE = STARTED;
 "
 -- Grant Login Permissions to Connect to the Endpoint:
-root@ag2-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag2-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd" -No -Q "
 GRANT CONNECT ON ENDPOINT::[Hadr_endpoint] TO [dbm_login];
 "
 
 -- Enable AlwaysOn_health Event Session:
-root@ag2-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag2-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd" -No -Q "
 ALTER EVENT SESSION AlwaysOn_health ON SERVER WITH (STARTUP_STATE = ON);
 "
 ```
@@ -371,13 +374,14 @@ The following Transact-SQL script creates an AG named ag2.
 
 ```
 kubectl exec -it -n dag ag2-0 -- bash
-root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag2-0:/# 
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd" -No -Q "
 CREATE AVAILABILITY GROUP [AG2]
 WITH (CLUSTER_TYPE = NONE)
 FOR REPLICA ON
     N'ag2-0'
         WITH (
-            ENDPOINT_URL = N'tcp://ag2-0.ag2:5022',
+            ENDPOINT_URL = N'tcp://ag2-0.ag2-pods:5022',
             AVAILABILITY_MODE = SYNCHRONOUS_COMMIT,
             SEEDING_MODE = AUTOMATIC,
             FAILOVER_MODE = MANUAL,
@@ -385,7 +389,7 @@ FOR REPLICA ON
         ),
     N'ag2-1'
         WITH (
-            ENDPOINT_URL = N'tcp://ag2-1.ag2:5022',
+            ENDPOINT_URL = N'tcp://ag2-1.ag2-pods:5022',
             AVAILABILITY_MODE = SYNCHRONOUS_COMMIT,
             SEEDING_MODE = AUTOMATIC,
             FAILOVER_MODE = MANUAL,
@@ -393,7 +397,7 @@ FOR REPLICA ON
         ),
     N'ag2-2'
         WITH (
-            ENDPOINT_URL = N'tcp://ag2-2.ag2:5022',
+            ENDPOINT_URL = N'tcp://ag2-2.ag2-pods:5022',
             AVAILABILITY_MODE = SYNCHRONOUS_COMMIT,
             SEEDING_MODE = AUTOMATIC,
             FAILOVER_MODE = MANUAL,
@@ -402,8 +406,24 @@ FOR REPLICA ON
 "
 
 
+
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd" -No -Q "
+CREATE AVAILABILITY GROUP [AG2]
+WITH (CLUSTER_TYPE = NONE)
+FOR REPLICA ON
+    N'ag2-0'
+        WITH (
+            ENDPOINT_URL = N'tcp://ag2-0.ag2-pods:5022',
+            AVAILABILITY_MODE = SYNCHRONOUS_COMMIT,
+            SEEDING_MODE = AUTOMATIC,
+            FAILOVER_MODE = MANUAL,
+            SECONDARY_ROLE (ALLOW_CONNECTIONS = ALL)
+        );
+"
+
 -- Grant the ability to create databases in the Availability Group:
-root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag2-0:/# 
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd" -No -Q "
 ALTER AVAILABILITY GROUP [AG2] GRANT CREATE ANY DATABASE;
 "
 ```
@@ -413,11 +433,11 @@ ALTER AVAILABILITY GROUP [AG2] GRANT CREATE ANY DATABASE;
 ```
 kubectl exec -it -n dag ag2-1 -- bash 
 
-root@ag2-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag2-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd" -No -Q "
 ALTER AVAILABILITY GROUP [AG2] JOIN WITH (CLUSTER_TYPE = NONE);
 "
 -- Grant the ability to create databases:
-root@ag2-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag2-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd" -No -Q "
 ALTER AVAILABILITY GROUP [AG2] GRANT CREATE ANY DATABASE;
 "
 ```
@@ -425,11 +445,11 @@ ALTER AVAILABILITY GROUP [AG2] GRANT CREATE ANY DATABASE;
 ```
 kubectl exec -it -n dag ag2-2 -- bash 
 
-root@ag2-2:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag2-2:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd" -No -Q "
 ALTER AVAILABILITY GROUP [AG2] JOIN WITH (CLUSTER_TYPE = NONE);
 "
 -- Grant the ability to create databases:
-root@ag2-2:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd!" -No -Q "
+root@ag2-2:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Pa55w0rd" -No -Q "
 ALTER AVAILABILITY GROUP [AG2] GRANT CREATE ANY DATABASE;
 "
 ```
@@ -439,34 +459,38 @@ See AG Status
 
 ```
 ➤ kubectl exec -it -n dag ag2-0 -- bash
-root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No
+root@ag2-0:/# 
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 -- See AG replicas 
-1> SELECT replica_server_name FROM sys.availability_replicas;
-2> go
+SELECT replica_server_name FROM sys.availability_replicas;
+go
+
+select database_name from sys.availability_databases_cluster;
+go
+
+SELECT is_local, role_desc, replica_id, group_id, synchronization_health_desc, connected_state_desc, operational_state_desc from sys.dm_hadr_availability_replica_states
+go 
+"
+```
+
 replica_server_name                                                                                                                                                                                                                                             
--------------------
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ag2-0                                                                                                                                                                                                                                                           
 ag2-1                                                                                                                                                                                                                                                           
 ag2-2                                                                                                                                                                                                                                                           
 
 (3 rows affected)
-1> select database_name from sys.availability_databases_cluster;
-2> go
 database_name                                                                                                                   
----------------
+--------------------------------------------------------------------------------------------------------------------------------
 
 (0 rows affected)
-1> SELECT is_local, role_desc, synchronization_health_desc from sys.dm_hadr_availability_replica_states
-2> go
-is_local role_desc                                                    synchronization_health_desc                                 
--------- ------------------------------------------------------------ ------------------------------------------------------------
-       1 PRIMARY                                                      NOT_HEALTHY                                                 
-       0 SECONDARY                                                    NOT_HEALTHY                                                 
-       0 SECONDARY                                                    NOT_HEALTHY                                                 
+is_local role_desc                                                    replica_id                           group_id                             synchronization_health_desc                                  connected_state_desc                                         operational_state_desc                                      
+-------- ------------------------------------------------------------ ------------------------------------ ------------------------------------ ------------------------------------------------------------ ------------------------------------------------------------ ------------------------------------------------------------
+       1 PRIMARY                                                      487F0493-46FD-45CA-A7C3-D2B9B28B8287 04539685-21FA-DFF2-D990-B45A6BCDD4CD NOT_HEALTHY                                                  CONNECTED                                                    ONLINE                                                      
+       0 SECONDARY                                                    12D921B4-3324-4B38-9BF1-976859EFE0E0 04539685-21FA-DFF2-D990-B45A6BCDD4CD NOT_HEALTHY                                                  CONNECTED                                                 NULL                                                        
+       0 SECONDARY                                                    84F486D1-AC13-4052-B23A-ED7E3B50B7CA 04539685-21FA-DFF2-D990-B45A6BCDD4CD NOT_HEALTHY                                                  CONNECTED                                                 NULL                                                        
 
 (3 rows affected)
-1> 
-```
 
 
 

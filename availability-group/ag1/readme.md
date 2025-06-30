@@ -67,7 +67,7 @@ kubectl exec -it -n dag ag1-0 -- sh
 
 Example /etc/hosts configuration:
 ```
-10.42.0.128     ag1-0.ag1.dag.svc.cluster.local ag1-0
+10.42.0.128     ag1-0.ag1-pods.dag.svc.cluster.local ag1-0
 10.42.0.129     ag1-1
 10.42.0.130     ag1-2
 ```
@@ -78,20 +78,20 @@ Install ping tools and test connectivity between pods
 kubectl exec -it ag1-0 -n dag -- bash
 root@ag1-0:/# apt-get update -y
 root@ag1-0:/# apt-get install -y iputils-ping
-root@ag1-0:/# ping ag1-1.ag1
-PING ag1-1.ag1.dag.svc.cluster.local (10.42.0.129) 56(84) bytes of data.
-64 bytes from ag1-1.ag1.dag.svc.cluster.local (10.42.0.129): icmp_seq=1 ttl=64 time=0.036 ms
-64 bytes from ag1-1.ag1.dag.svc.cluster.local (10.42.0.129): icmp_seq=2 ttl=64 time=0.091 ms
+root@ag1-0:/# ping ag1-1.ag1-pods
+PING ag1-1.ag1-pods.dag.svc.cluster.local (10.42.0.129) 56(84) bytes of data.
+64 bytes from ag1-1.ag1-pods.dag.svc.cluster.local (10.42.0.129): icmp_seq=1 ttl=64 time=0.036 ms
+64 bytes from ag1-1.ag1-pods.dag.svc.cluster.local (10.42.0.129): icmp_seq=2 ttl=64 time=0.091 ms
 ^C
---- ag1-1.ag1.dag.svc.cluster.local ping statistics ---
+--- ag1-1.ag1-pods.dag.svc.cluster.local ping statistics ---
 2 packets transmitted, 2 received, 0% packet loss, time 1013ms
 rtt min/avg/max/mdev = 0.036/0.063/0.091/0.027 ms
-root@ag1-0:/# ping ag1-2.ag1
-PING ag1-2.ag1.dag.svc.cluster.local (10.42.0.130) 56(84) bytes of data.
-64 bytes from ag1-2.ag1.dag.svc.cluster.local (10.42.0.130): icmp_seq=1 ttl=64 time=0.224 ms
-64 bytes from ag1-2.ag1.dag.svc.cluster.local (10.42.0.130): icmp_seq=2 ttl=64 time=0.069 ms
+root@ag1-0:/# ping ag1-2.ag1-pods
+PING ag1-2.ag1-pods.dag.svc.cluster.local (10.42.0.130) 56(84) bytes of data.
+64 bytes from ag1-2.ag1-pods.dag.svc.cluster.local (10.42.0.130): icmp_seq=1 ttl=64 time=0.224 ms
+64 bytes from ag1-2.ag1-pods.dag.svc.cluster.local (10.42.0.130): icmp_seq=2 ttl=64 time=0.069 ms
 ^C
---- ag1-2.ag1.dag.svc.cluster.local ping statistics ---
+--- ag1-2.ag1-pods.dag.svc.cluster.local ping statistics ---
 2 packets transmitted, 2 received, 0% packet loss, time 1044ms
 rtt min/avg/max/mdev = 0.069/0.146/0.224/0.077 ms
 root@ag1-0:/# 
@@ -117,7 +117,7 @@ Follow the steps in the guide to create a connection profile:
 - **Database name:** *(Press Enter to skip)*
 - **Authentication type:** `SQL Login`
 - **Username:** `sa`
-- **Password:** `Pa55w0rd!` *(Use the MSSQL_SA_PASSWORD from the StatefulSet)*
+- **Password:** `Pa55w0rd` *(Use the MSSQL_SA_PASSWORD from the StatefulSet)*
 - **Profile name:** `ag1-0`
 
 > **Note:** Ensure the password meets the security requirements:
@@ -139,7 +139,7 @@ You can also execute SQL queries by logging into the pod and using the `sqlcmd` 
 
 ```bash
 kubectl exec -it ag1-0 -n dag -- bash
-# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P Pa55w0rd! -No
+# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P Pa55w0rd -No
 ```
 
 #### Example Query
@@ -205,30 +205,27 @@ go
 ```
 $ kubectl exec -it -n dag ag1-0 -- bash
 -- Create the instance-level login
-root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "CREATE LOGIN dbm_login WITH PASSWORD = 'Pa55w0rd\!';"
 root@ag1-0:/# 
--- Verify that the login was created:
-root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "SELECT name FROM sys.sql_logins WHERE name = 'dbm_login';"
-root@ag1-0:/# 
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "CREATE LOGIN dbm_login WITH PASSWORD = 'Pa55w0rd';"
+Verify that the login was created:
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "SELECT name FROM sys.sql_logins WHERE name = 'dbm_login';"
 -- create a master key for private key encryption
-root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Pa55w0rd\!';"
-root@ag1-0:/# 
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Pa55w0rd';"
+
 -- create the certificate
-root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "CREATE CERTIFICATE dbm_certificate WITH SUBJECT = 'dbm';"
-root@ag1-0:/# 
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "CREATE CERTIFICATE dbm_certificate WITH SUBJECT = 'dbm';"
 
 
-root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 BACKUP CERTIFICATE dbm_certificate 
 TO FILE = '/var/opt/mssql/dbm_certificate.cer' 
 WITH PRIVATE KEY (
     FILE = '/var/opt/mssql/dbm_certificate.pvk', 
-    ENCRYPTION BY PASSWORD = 'Pa55w0rd\!'
+    ENCRYPTION BY PASSWORD = 'Pa55w0rd'
 );
-"
-root@ag1-0:/# 
-root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
--- Create endpoint
+"   
+
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 CREATE ENDPOINT [Hadr_endpoint] 
    AS TCP (
       LISTENER_IP = (0.0.0.0), 
@@ -244,7 +241,7 @@ CREATE ENDPOINT [Hadr_endpoint]
 ALTER ENDPOINT [Hadr_endpoint] STATE = STARTED;
 "
 
-root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 -- Grant login permission to connect to the endpoint
 GRANT CONNECT ON ENDPOINT::[Hadr_endpoint] TO [dbm_login];
 "
@@ -301,22 +298,22 @@ Create the certificate and endpoint On each secondary replica (ag1-1, ag1-2), fo
 ```
 $ kubectl exec -it -n dag ag1-1 -- bash
 -- Create the dbm_login
-root@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "CREATE LOGIN dbm_login WITH PASSWORD = 'Pa55w0rd\!';"
+root@ag1-1:/# 
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "CREATE LOGIN dbm_login WITH PASSWORD = 'Pa55w0rd';"
 
 -- Create the Master Key:
-root@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Pa55w0rd\!';"
--- Create the Certificate: Assuming you’ve already copied the certificate and private key files to /tmp/ on the pods:
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Pa55w0rd';"
 
-root@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
+-- Create the Certificate: Assuming you’ve already copied the certificate and private key files to /tmp/ on the pods:
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 CREATE CERTIFICATE dbm_certificate
    FROM FILE = '/var/opt/mssql/dbm_certificate.cer'
    WITH PRIVATE KEY (
    FILE = '/var/opt/mssql/dbm_certificate.pvk',
-   DECRYPTION BY PASSWORD = 'Pa55w0rd\!');
+   DECRYPTION BY PASSWORD = 'Pa55w0rd');
 "
 --- Create the Endpoint:
-
-root@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 CREATE ENDPOINT [Hadr_endpoint]
    AS TCP (LISTENER_IP = (0.0.0.0), LISTENER_PORT = 5022)
    FOR DATA_MIRRORING (
@@ -327,12 +324,12 @@ CREATE ENDPOINT [Hadr_endpoint]
 ALTER ENDPOINT [Hadr_endpoint] STATE = STARTED;
 "
 -- Grant Login Permissions to Connect to the Endpoint:
-root@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 GRANT CONNECT ON ENDPOINT::[Hadr_endpoint] TO [dbm_login];
 "
 
 -- Enable AlwaysOn_health Event Session:
-root@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 ALTER EVENT SESSION AlwaysOn_health ON SERVER WITH (STARTUP_STATE = ON);
 "
 ```
@@ -353,13 +350,14 @@ The following Transact-SQL script creates an AG named ag1.
 
 ```
 kubectl exec -it -n dag ag1-0 -- bash
-root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
+root@ag1-0:/# 
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 CREATE AVAILABILITY GROUP [AG1]
 WITH (CLUSTER_TYPE = NONE)
 FOR REPLICA ON
     N'ag1-0'
         WITH (
-            ENDPOINT_URL = N'tcp://ag1-0.ag1:5022',
+            ENDPOINT_URL = N'tcp://ag1-0.ag1-pods:5022',
             AVAILABILITY_MODE = SYNCHRONOUS_COMMIT,
             SEEDING_MODE = AUTOMATIC,
             FAILOVER_MODE = MANUAL,
@@ -367,7 +365,7 @@ FOR REPLICA ON
         ),
     N'ag1-1'
         WITH (
-            ENDPOINT_URL = N'tcp://ag1-1.ag1:5022',
+            ENDPOINT_URL = N'tcp://ag1-1.ag1-pods:5022',
             AVAILABILITY_MODE = SYNCHRONOUS_COMMIT,
             SEEDING_MODE = AUTOMATIC,
             FAILOVER_MODE = MANUAL,
@@ -375,7 +373,7 @@ FOR REPLICA ON
         ),
     N'ag1-2'
         WITH (
-            ENDPOINT_URL = N'tcp://ag1-2.ag1:5022',
+            ENDPOINT_URL = N'tcp://ag1-2.ag1-pods:5022',
             AVAILABILITY_MODE = SYNCHRONOUS_COMMIT,
             SEEDING_MODE = AUTOMATIC,
             FAILOVER_MODE = MANUAL,
@@ -385,33 +383,52 @@ FOR REPLICA ON
 
 
 -- Grant the ability to create databases in the Availability Group:
-root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
+root@ag1-0:/# 
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 ALTER AVAILABILITY GROUP [AG1] GRANT CREATE ANY DATABASE;
 "
 ```
 
 
+ag1-0:
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
+SELECT is_local, role_desc, replica_id, group_id, synchronization_health_desc, connected_state_desc, operational_state_desc from sys.dm_hadr_availability_replica_states
+go 
+"
+is_local role_desc                                                    replica_id                           group_id                             synchronization_health_desc                                  connected_state_desc                                         operational_state_desc                                      
+-------- ------------------------------------------------------------ ------------------------------------ ------------------------------------ ------------------------------------------------------------ ------------------------------------------------------------ ------------------------------------------------------------
+       1 PRIMARY                                                      88ABA6BA-C691-496B-9E8B-2D545F90EC1B BE9BE8C9-6E17-1132-BFBA-8B7D2C28AFDB NOT_HEALTHY                                                  CONNECTED                                                    ONLINE                                                      
+       0 SECONDARY                                                    467F19CF-B9EF-4D95-AEF8-105346168E47 BE9BE8C9-6E17-1132-BFBA-8B7D2C28AFDB NOT_HEALTHY                                                  DISCONNECTED                                                 NULL                                                        
+       0 SECONDARY                                                    C99C11ED-2FD0-4C48-B972-85EC06706633 BE9BE8C9-6E17-1132-BFBA-8B7D2C28AFDB NOT_HEALTHY                                                  DISCONNECTED                                                 NULL                                                        
+
+(3 rows affected)
+
+
+
+
+
+
 ### Join Secondary Replicas to the Availability Group
 ```
 kubectl exec -it -n dag ag1-1 -- bash 
-
-root@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
-ALTER AVAILABILITY GROUP [AG1] JOIN WITH (CLUSTER_TYPE = NONE);
+root@ag1-1:/# 
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
+    ALTER AVAILABILITY GROUP [AG1] JOIN WITH (CLUSTER_TYPE = NONE);
 "
 -- Grant the ability to create databases:
-root@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 ALTER AVAILABILITY GROUP [AG1] GRANT CREATE ANY DATABASE;
 "
 ```
 
 ```
 kubectl exec -it -n dag ag1-2 -- bash 
-
-root@ag1-2:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
+root@ag1-2:/# 
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 ALTER AVAILABILITY GROUP [AG1] JOIN WITH (CLUSTER_TYPE = NONE);
 "
 -- Grant the ability to create databases:
-root@ag1-2:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 ALTER AVAILABILITY GROUP [AG1] GRANT CREATE ANY DATABASE;
 "
 ```
@@ -423,8 +440,8 @@ See AG Status
 ➤ kubectl exec -it -n dag ag1-0 -- bash
 root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No
 -- See AG replicas 
-1> SELECT replica_server_name FROM sys.availability_replicas;
-2> go
+SELECT replica_server_name FROM sys.availability_replicas;
+go
 replica_server_name                                                                                                                                                                                                                                             
 -------------------
 ag1-0                                                                                                                                                                                                                                                           
@@ -438,17 +455,18 @@ database_name
 ---------------
 
 (0 rows affected)
-1> SELECT is_local, role_desc, synchronization_health_desc from sys.dm_hadr_availability_replica_states
-2> go
-is_local role_desc                                                    synchronization_health_desc                                 
--------- ------------------------------------------------------------ ------------------------------------------------------------
-       1 PRIMARY                                                      NOT_HEALTHY                                                 
-       0 SECONDARY                                                    NOT_HEALTHY                                                 
-       0 SECONDARY                                                    NOT_HEALTHY                                                 
+
+I have no name!@ag1-0:/var/opt/mssql$ /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
+SELECT is_local, role_desc, replica_id, group_id, synchronization_health_desc, connected_state_desc, operational_state_desc from sys.dm_hadr_availability_replica_states
+go 
+"
+is_local role_desc                                                    replica_id                           group_id                             synchronization_health_desc                                  connected_state_desc                                         operational_state_desc                                      
+-------- ------------------------------------------------------------ ------------------------------------ ------------------------------------ ------------------------------------------------------------ ------------------------------------------------------------ ------------------------------------------------------------
+       1 PRIMARY                                                      2A3DD46C-44E1-4B55-A793-7CC6B020567A BE9BE8C9-6E17-1132-BFBA-8B7D2C28AFDB NOT_HEALTHY                                                  CONNECTED                                                    ONLINE                                                      
+       0 SECONDARY                                                    3332C15D-19E6-4FA0-B6A7-B79F9A59ADC0 BE9BE8C9-6E17-1132-BFBA-8B7D2C28AFDB NOT_HEALTHY                                                  CONNECTED                                                    NULL                                                        
+       0 SECONDARY                                                    E1669A77-1A9E-41A4-9806-4DCC4F707903 BE9BE8C9-6E17-1132-BFBA-8B7D2C28AFDB NOT_HEALTHY                                                  CONNECTED                                                    NULL                                                        
 
 (3 rows affected)
-1> 
-```
 
 
 
@@ -458,34 +476,55 @@ Ensure that the database you add to the availability group is in the full recove
 
 ```
 ➤ kubectl exec -it -n dag ag1-0 -- bash
-root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No
-
-1> CREATE DATABASE agtestdb;
-2> go
-1> ALTER DATABASE agtestdb SET RECOVERY FULL;
-2> go
-1> BACKUP DATABASE agtestdb TO DISK = '/var/opt/mssql/data/agtestdb.bak';
-2> go
-Processed 344 pages for database 'agtestdb', file 'agtestdb' on file 1.
-Processed 1 pages for database 'agtestdb', file 'agtestdb_log' on file 1.
+root@ag1-0:/# 
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
+CREATE DATABASE agdb;
+go
+ALTER DATABASE agdb SET RECOVERY FULL;
+go
+BACKUP DATABASE agdb TO DISK = '/var/opt/mssql/data/agdb.bak';
+go
+ALTER AVAILABILITY GROUP [ag1] ADD DATABASE [agdb];
+go
+"
+Processed 344 pages for database 'agdb', file 'agdb' on file 1.
+Processed 1 pages for database 'agdb', file 'agdb_log' on file 1.
 BACKUP DATABASE successfully processed 345 pages in 0.430 seconds (6.253 MB/sec).
-1> ALTER AVAILABILITY GROUP [ag1] ADD DATABASE [agtestdb];
-2> go
+
+
+
+
+
+
+
+I have no name!@ag1-0:/var/opt/mssql$ /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
+SELECT is_local, role_desc, replica_id, group_id, synchronization_health_desc, connected_state_desc, operational_state_desc from sys.dm_hadr_availability_replica_states
+go 
+"
+is_local role_desc                                                    replica_id                           group_id                             synchronization_health_desc                                  connected_state_desc                                         operational_state_desc                                      
+-------- ------------------------------------------------------------ ------------------------------------ ------------------------------------ ------------------------------------------------------------ ------------------------------------------------------------ ------------------------------------------------------------
+       1 PRIMARY                                                      2A3DD46C-44E1-4B55-A793-7CC6B020567A BE9BE8C9-6E17-1132-BFBA-8B7D2C28AFDB HEALTHY                                                      CONNECTED                                                    ONLINE                                                      
+       0 SECONDARY                                                    3332C15D-19E6-4FA0-B6A7-B79F9A59ADC0 BE9BE8C9-6E17-1132-BFBA-8B7D2C28AFDB HEALTHY                                                      CONNECTED                                                    NULL                                                        
+       0 SECONDARY                                                    E1669A77-1A9E-41A4-9806-4DCC4F707903 BE9BE8C9-6E17-1132-BFBA-8B7D2C28AFDB HEALTHY                                                      CONNECTED                                                    NULL                                                        
+
+(3 rows affected)
+
+
+
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 -- insert some test data  and check it is replicated or not 
-1> USE agtestdb;
-2> go
-Changed database context to 'agtestdb'.
-1> CREATE TABLE inventory (id INT, name NVARCHAR(50), quantity INT);
-2> go
-1> INSERT INTO inventory VALUES (1, 'banana', 150); 
-2> INSERT INTO Inventory VALUES (2, 'orange', 154);
-3> go
+USE agdb;
+go
+CREATE TABLE inventory (id INT, name NVARCHAR(50), quantity INT);
+go
+INSERT INTO inventory VALUES (1, 'banana', 150); 
+INSERT INTO Inventory VALUES (2, 'orange', 154);
+go
 
-(1 rows affected)
+SELECT * FROM inventory;
+go
+"
 
-(1 rows affected)
-1> SELECT * FROM inventory;
-2> go
 id          name                                               quantity   
 ----------- -------------------------------------------------- -----------
           1 banana                                                     150
@@ -497,12 +536,13 @@ id          name                                               quantity
 ```
 --- Check the data is replicated in the secondary: connect to the secondary and run
 kubectl exec -it -n dag ag1-1 -- bash
-root@ag1-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No
-1> USE agtestdb;
-2> go
-Changed database context to 'agtestdb'.
-1> SELECT * FROM inventory;
-2> go
+root@ag1-1:/# 
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
+USE agdb;
+go
+SELECT * FROM inventory;
+go
+"
 id          name                                               quantity   
 ----------- -------------------------------------------------- -----------
           1 banana                                                     150
@@ -513,12 +553,13 @@ id          name                                               quantity
 --- 
 
 kubectl exec -it -n dag ag1-2 -- bash
-root@ag1-2:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No
-1>  USE agtestdb;
-2> go
-Changed database context to 'agtestdb'.
-1> SELECT * FROM inventory;
-2> go
+root@ag1-2:/# 
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No
+USE agdb;
+go
+SELECT * FROM inventory;
+go
+"
 id          name                                               quantity   
 ----------- -------------------------------------------------- -----------
           1 banana                                                     150
@@ -539,7 +580,7 @@ root@ag1-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASS
 2> go
 database_name                                                                                                                   
 ------------------------
-agtestdb                                                                                                                        
+agdb                                                                                                                        
 
 (1 rows affected)
 1> SELECT is_local, role_desc, synchronization_health_desc from sys.dm_hadr_availability_replica_states
@@ -575,7 +616,7 @@ use [master]
 ALTER AVAILABILITY GROUP [ag1]  SET (ROLE = SECONDARY); 
 
 use [master]
-ALTER DATABASE [agtestdb] SET HADR RESUME
+ALTER DATABASE [agdb] SET HADR RESUME
 ```
 
 If old primary was unavailable / offline during the force fail-over:
@@ -596,7 +637,7 @@ ALTER AVAILABILITY GROUP [ag1]
      SET (ROLE = SECONDARY); 
 
 use [master]
-ALTER DATABASE [agtestdb]
+ALTER DATABASE [agdb]
      SET HADR RESUME
 
 ```
