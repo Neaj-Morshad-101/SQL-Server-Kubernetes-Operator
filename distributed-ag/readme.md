@@ -457,7 +457,7 @@ go
 
 
 
-INSERT INTO inventory VALUES (4, 'RetryDAG', 150); 
+INSERT INTO inventory VALUES (4, 'DATA-CENTER-FAILOVER', 150); 
 
 
 
@@ -528,8 +528,10 @@ is_local role_desc                                                    replica_id
 
 
 root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
-use agtestdb;
+use agdb;
+go
 select * from inventory;
+go
 "
 Changed database context to 'agtestdb'.
 id          name                                               quantity   
@@ -675,7 +677,7 @@ We Need to explore more on the above links.
 
 Change the availability mode to sync commit. (if ag1 primary alive)
 Execute this command on Primary and Forwarder;
-`ALTER AVAILABILITY GROUP DAG MODIFY AVAILABILITY GROUP ON ‘AG!’ WITH ( AVAILABILITY_MODE = SYNCHRONOUS_COMMIT ),‘AG2’ WITH ( AVAILABILITY_MODE = SYNCHRONOUS_COMMIT);`
+`ALTER AVAILABILITY GROUP DAG MODIFY AVAILABILITY GROUP ON ‘AG1’ WITH ( AVAILABILITY_MODE = SYNCHRONOUS_COMMIT ),‘AG2’ WITH ( AVAILABILITY_MODE = SYNCHRONOUS_COMMIT);`
 
 Now our distributed AG in sync-commit mode.
 We should check last_hardened_lsn it has to be the same for all databases on and both AG, the state should be in “SYNCHRONIZED” status. Check by running this query on global primary and forwarder.
