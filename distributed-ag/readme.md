@@ -157,7 +157,7 @@ root@ag2-0:/#
 /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 use agdb
 go
-select * from inventory;
+select * from test_table;
 go
 exit
 "
@@ -174,7 +174,7 @@ kubectl exec -it -n dag ag2-1 -- bash
 root@ag2-1:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 use agtestdb
 go
-select * from inventory;
+select * from test_table;
 go
 exit
 "
@@ -191,7 +191,7 @@ kubectl exec -it -n dag ag2-2 -- bash
 root@ag2-2:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 use agtestdb
 go
-select * from inventory;
+select * from test_table;
 go
 exit
 "
@@ -232,9 +232,9 @@ kubectl exec -it -n dag ag1-0 -- bash
 /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 use agdb;
 go
-INSERT INTO inventory VALUES (3, 'nana', 150);
+INSERT INTO test_table VALUES (3, 'nana', 150);
 go
-select * from inventory;
+select * from test_table;
 go
 "
 ```
@@ -244,7 +244,7 @@ kubectl exec -it -n dag ag2-1 -- bash
 /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 use agtestdb;
 go
-select * from inventory;
+select * from test_table;
 go
 "
 ```
@@ -259,7 +259,7 @@ kubectl exec -it -n dag ag2-2 -- bash
 /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 use agdb1;
 go
-select * from inventory;
+select * from test_table;
 go
 "
 ```
@@ -457,7 +457,7 @@ go
 
 
 
-INSERT INTO inventory VALUES (4, 'DATA-CENTER-FAILOVER', 150); 
+INSERT INTO test_table VALUES (4, 'DATA-CENTER-FAILOVER', 150); 
 
 
 
@@ -466,9 +466,9 @@ Let's insert new data after ag1's internal failover.
 /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 use agtestdb;
 go
-INSERT INTO inventory VALUES (4, 'SecoundInternalAg1Failover2', 150); 
+INSERT INTO test_table VALUES (4, 'SecoundInternalAg1Failover2', 150); 
 go
-select * from inventory;
+select * from test_table;
 go
 "
 
@@ -487,7 +487,7 @@ id          name                                               quantity
 See from all replica of ag1 & ag2: 
 /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 use agtestdb;
-select * from inventory;
+select * from test_table;
 "
 
 
@@ -530,7 +530,7 @@ is_local role_desc                                                    replica_id
 root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 use agdb;
 go
-select * from inventory;
+select * from test_table;
 go
 "
 Changed database context to 'agtestdb'.
@@ -566,7 +566,7 @@ go
 (4 rows affected)
 root@ag2-0:/# /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 use agtestdb;
-select * from inventory;
+select * from test_table;
 "
 Changed database context to 'agtestdb'.
 id          name                                               quantity   
@@ -696,10 +696,10 @@ With this query, failover the distributed AG to the secondary Availability Group
 
 After this, global primary is ag2-0, forwader is ag1-1. all replica is syncing with new global primary.
 insert new data on new global primary. 
-`INSERT INTO inventory VALUES (5, 'ag11Toag20', 150); `
+`INSERT INTO test_table VALUES (5, 'ag11Toag20', 150); `
 
 You should see all the replicas of ag1 and ag2 are synced with new data. see from all replicas of ag1 and ag2. 
-1> select * from inventory;
+1> select * from test_table;
 2> go
 id          name                                               quantity   
 ----------- -------------------------------------------------- -----------

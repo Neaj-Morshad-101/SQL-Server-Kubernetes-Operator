@@ -515,13 +515,13 @@ is_local role_desc                                                    replica_id
 -- insert some test data  and check it is replicated or not 
 USE agdb;
 go
-CREATE TABLE inventory (id INT, name NVARCHAR(50), quantity INT);
+CREATE TABLE test_table (id INT, name NVARCHAR(50));
 go
-INSERT INTO inventory VALUES (1, 'banana', 150); 
-INSERT INTO Inventory VALUES (2, 'orange', 154);
+INSERT INTO test_table VALUES (1, 'banana', 150); 
+INSERT INTO test_table VALUES (2, 'orange', 154);
 go
 
-SELECT * FROM inventory;
+SELECT * FROM test_table;
 go
 "
 
@@ -540,7 +540,7 @@ root@ag1-1:/#
 /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No -Q "
 USE agdb;
 go
-SELECT * FROM inventory;
+SELECT * FROM test_table;
 go
 "
 id          name                                               quantity   
@@ -557,7 +557,7 @@ root@ag1-2:/#
 /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -No
 USE agdb;
 go
-SELECT * FROM inventory;
+SELECT * FROM test_table;
 go
 "
 id          name                                               quantity   
